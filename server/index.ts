@@ -12,17 +12,12 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.get("/", (_req, res) => {
+  res.json({ message: "Hello World" });
+});
+
 app.use(webhooksRouter);
 
 app.listen(env.port, () => {
   console.info(`Ledger-Core API listening on http://localhost:${env.port}`);
-  console.info(`Webhook path: POST http://localhost:${env.port}${env.nombaWebhookPath}`);
-  if (!env.publicWebhookUrl) {
-    console.info(
-      "Set PUBLIC_WEBHOOK_URL after exposing this server (e.g. ngrok) for Nomba activation.",
-    );
-    return;
-  }
-
-  console.info(`Submit this URL to Nomba: ${env.publicWebhookUrl}`);
 });

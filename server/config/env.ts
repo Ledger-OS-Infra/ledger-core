@@ -15,5 +15,4 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   nombaWebhookSecret: required("NOMBA_WEBHOOK_SECRET"),
   nombaWebhookPath: process.env.NOMBA_WEBHOOK_PATH ?? "/webhooks/nomba",
-  publicWebhookUrl: process.env.PUBLIC_WEBHOOK_URL,
 };
