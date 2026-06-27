@@ -4,7 +4,12 @@
   "private": true,
   "description": "Universal reconciliation engine built on Nomba Virtual Accounts",
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "db:migrate": "npm run migrate --prefix server",
+    "db:seed": "npm run seed --prefix server",
+    "db:setup": "npm run db:setup --prefix server"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
