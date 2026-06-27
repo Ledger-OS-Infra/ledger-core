@@ -6,4 +6,4 @@ node_modules/
 dist/
 coverage/
 .turbo/
-docker-compose.yml
+docker-compose.override.yml
