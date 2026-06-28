@@ -1,7 +1,7 @@
 import type { Knex } from "knex";
 
 /**
- * Reporting view stubs — full definitions in issue #4.
+ * Reporting views for dashboard and API analytics.
  * Amounts are stored in NGN (whole naira).
  */
 export async function up(knex: Knex): Promise<void> {

@@ -325,12 +325,15 @@ flowchart LR
 
 ## Reporting views
 
-Defined in `server/db/migrations/20260627100001_reporting_views.ts` (issue #4):
+Defined in `server/db/migrations/20260627100001_reporting_views.ts` and `20260627100002_update_reporting_views.ts` (issue #4):
 
 - `v_customer_balance_summary` — outstanding + wallet credit per customer
-- `v_obligation_aging` — 30 / 60 / 90+ day buckets
+- `v_obligation_aging` — per-obligation aging buckets
+- `v_obligation_aging_summary` — aggregated bucket totals per business
 - `v_business_metrics` — inflow, outstanding, overdue totals
 - `v_obligation_payment_history` — allocations per obligation
+
+Example queries and API endpoints: [`docs/REPORTING_VIEWS.md`](./REPORTING_VIEWS.md).
 
 ---
 

@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import { env } from "./config/env";
 import { webhooksRouter } from "./routes/webhooks";
+import { reportingRouter } from "./routes/reporting";
 import { requestLogger } from "./middleware/requestLogger";
 import { errorHandler } from "./middleware/errorHandler";
 
@@ -20,6 +21,7 @@ app.get("/", (_req, res) => {
 });
 
 app.use(webhooksRouter);
+app.use("/reporting", reportingRouter);
 
 app.use(errorHandler);
 
