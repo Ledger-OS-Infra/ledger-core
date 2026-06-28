@@ -10,6 +10,8 @@ Transactional schema for customer virtual accounts, payment obligations, inbound
 
 ## ER diagram
 
+> Diagram uses simplified types for GitHub Mermaid compatibility. See [Entity reference](#entity-reference) and [Indexes](#indexes) for full PostgreSQL types, keys, and constraints.
+
 ```mermaid
 erDiagram
     businesses ||--o{ customers : has
@@ -17,112 +19,112 @@ erDiagram
     businesses ||--o{ payment_obligations : owns
     businesses ||--o{ payment_events : receives
 
-    customers ||--|| virtual_accounts : "has one"
-    customers ||--o{ billing_rules : "subject to"
+    customers ||--|| virtual_accounts : maps
+    customers ||--o{ billing_rules : billed
     customers ||--o{ payment_obligations : owes
-    customers ||--o{ ledger_entries : "audit trail"
-    customers ||--|| customer_wallets : "credit balance"
+    customers ||--o{ ledger_entries : ledger
+    customers ||--|| customer_wallets : wallet
 
     billing_rules ||--o{ payment_obligations : generates
 
-    virtual_accounts ||--o{ payment_events : "receives into"
+    virtual_accounts ||--o{ payment_events : receives
 
     payment_events ||--o{ ledger_entries : allocates
 
-    payment_obligations ||--o{ ledger_entries : "applied to"
+    payment_obligations ||--o{ ledger_entries : applied
 
     businesses {
         uuid id PK
-        text name
-        jsonb metadata
-        timestamptz created_at
-        timestamptz updated_at
+        string name
+        json metadata
+        datetime created_at
+        datetime updated_at
     }
 
     customers {
         uuid id PK
-        uuid business_id FK
-        text full_name
-        text email
-        text phone
-        customer_status status
-        jsonb metadata
-        timestamptz created_at
-        timestamptz updated_at
+        uuid business_id
+        string full_name
+        string email
+        string phone
+        string status
+        json metadata
+        datetime created_at
+        datetime updated_at
     }
 
     virtual_accounts {
         uuid id PK
-        uuid customer_id FK UK
-        text nomba_account_ref UK
-        text account_number
-        text bank_name
-        text bank_code
+        uuid customer_id
+        string nomba_account_ref
+        string account_number
+        string bank_name
+        string bank_code
         boolean is_active
-        timestamptz created_at
+        datetime created_at
     }
 
     billing_rules {
         uuid id PK
-        uuid business_id FK
-        uuid customer_id FK
-        obligation_type obligation_type
-        bigint amount
-        text recurrence
-        smallint day_of_month
+        uuid business_id
+        uuid customer_id
+        string obligation_type
+        int amount
+        string recurrence
+        int day_of_month
         date next_run_date
         boolean is_active
-        jsonb metadata
-        timestamptz created_at
-        timestamptz updated_at
+        json metadata
+        datetime created_at
+        datetime updated_at
     }
 
     payment_obligations {
         uuid id PK
-        uuid business_id FK
-        uuid customer_id FK
-        uuid billing_rule_id FK
-        obligation_type obligation_type
-        text reference_code
-        bigint amount
-        bigint amount_paid
+        uuid business_id
+        uuid customer_id
+        uuid billing_rule_id
+        string obligation_type
+        string reference_code
+        int amount
+        int amount_paid
         date due_date
-        obligation_status status
-        jsonb metadata
-        timestamptz created_at
-        timestamptz updated_at
+        string status
+        json metadata
+        datetime created_at
+        datetime updated_at
     }
 
     payment_events {
         uuid id PK
-        uuid business_id FK
-        uuid virtual_account_id FK
-        text idempotency_key UK
-        bigint amount
-        text sender_name
-        text sender_account
-        jsonb raw_payload
-        timestamptz received_at
-        timestamptz created_at
+        uuid business_id
+        uuid virtual_account_id
+        string idempotency_key
+        int amount
+        string sender_name
+        string sender_account
+        json raw_payload
+        datetime received_at
+        datetime created_at
     }
 
     ledger_entries {
         uuid id PK
-        uuid customer_id FK
-        uuid obligation_id FK
-        uuid payment_event_id FK
-        ledger_entry_type entry_type
-        bigint amount
-        bigint balance_after
-        text description
-        timestamptz created_at
+        uuid customer_id
+        uuid obligation_id
+        uuid payment_event_id
+        string entry_type
+        int amount
+        int balance_after
+        string description
+        datetime created_at
     }
 
     customer_wallets {
         uuid id PK
-        uuid customer_id FK UK
-        bigint balance
-        timestamptz updated_at
+        uuid customer_id
+        int balance
+        datetime updated_at
     }
 ```
 
