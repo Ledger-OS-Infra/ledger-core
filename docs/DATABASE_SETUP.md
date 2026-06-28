@@ -225,6 +225,8 @@ Dev seed reproduces the scenarios in `TASK.md` §6:
 
 Reporting view stubs: `v_customer_balance_summary`, `v_obligation_aging`, `v_business_metrics`, `v_obligation_payment_history`.
 
+Full entity reference, ER diagram, indexes, and append-only policy: [`docs/SCHEMA.md`](./SCHEMA.md).
+
 ---
 
 ## Troubleshooting
