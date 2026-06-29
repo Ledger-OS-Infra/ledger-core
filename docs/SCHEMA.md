@@ -3,7 +3,7 @@
 Transactional schema for customer virtual accounts, payment obligations, inbound transfers, reconciliation, and immutable ledger entries.
 
 **Implementation:** `server/db/migrations/20260627100000_initial_schema.ts`  
-**Amounts:** whole NGN (`BIGINT`, no decimals)  
+**Amounts:** kobo (`BIGINT`) — Nomba uses kobo; 1 NGN = 100 kobo (e.g. ₦1,500 → `150000`)  
 **Status:** MVP single-business; `business_id` on all tenant-scoped tables for future multi-business SaaS.
 
 ---
@@ -180,8 +180,8 @@ Generic expected payment — invoice, subscription/MBU, fee, levy, or custom. Co
 |------------------|---------------------|-------------------------------------------------|
 | `obligation_type`| `obligation_type`   | `INVOICE` \| `SUBSCRIPTION` \| `FEE` \| `LEVY` \| `CUSTOM` |
 | `reference_code` | TEXT                | Human/API reference (e.g. `INV-2026-001`)       |
-| `amount`         | BIGINT              | Total due (NGN)                                 |
-| `amount_paid`    | BIGINT              | Running total applied                           |
+| `amount`         | BIGINT              | Total due (kobo)                                |
+| `amount_paid`    | BIGINT              | Running total applied (kobo)                    |
 | `due_date`       | DATE                | Used for aging / OVERDUE                        |
 | `status`         | `obligation_status` | `UNPAID` \| `PARTIAL` \| `PAID` \| `OVERDUE`    |
 | `billing_rule_id`| UUID FK             | Set when auto-generated from a billing rule     |
@@ -220,7 +220,7 @@ Raw inbound transfer captured from Nomba webhook. Insert-only audit record.
 | Column             | Type        | Notes                                    |
 |--------------------|-------------|------------------------------------------|
 | `idempotency_key`  | TEXT UK     | Nomba transaction/request ID — dedup key |
-| `amount`           | BIGINT      | Transfer amount (NGN)                    |
+| `amount`           | BIGINT      | Transfer amount (kobo)                   |
 | `sender_name`      | TEXT        | From webhook payload                     |
 | `sender_account`   | TEXT        | From webhook payload                     |
 | `raw_payload`      | JSONB       | Full webhook body for audit              |
@@ -251,7 +251,7 @@ Unallocated / overpayment credit per customer. One row per customer; balance upd
 
 | Column    | Type   | Notes                        |
 |-----------|--------|------------------------------|
-| `balance` | BIGINT | ≥ 0; whole NGN               |
+| `balance` | BIGINT | ≥ 0; kobo                    |
 
 Wallet balance changes are also reflected in `ledger_entries` for a full audit trail.
 
@@ -372,6 +372,6 @@ SELECT id FROM payment_events WHERE idempotency_key = $1;
 - [ ] `business_id` scoping supports future multi-tenant without migration
 - [ ] Indexes cover webhook lookup, obligation matching, and idempotency
 - [ ] Append-only ledger policy agreed for `ledger_entries` and `payment_events`
-- [ ] Amounts as whole NGN acceptable for MVP (no kobo decimals)
+- [ ] Amounts stored in kobo (matches Nomba webhook `transactionAmount`)
 
 **Reviewers:** leave a comment on issue #2 or PR to sign off.

@@ -15,3 +15,7 @@ export const businessIdParams = z.object({
 export const obligationIdParams = z.object({
   obligationId: uuidParam,
 });
+
+export const customerIdParams = z.object({
+  id: uuidParam,
+});

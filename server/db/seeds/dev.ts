@@ -1,4 +1,5 @@
 import type { Knex } from "knex";
+import { ngnToKobo } from "../../lib/money";
 
 /** Stable IDs so dev seed is reproducible across environments. */
 const IDS = {
@@ -24,7 +25,8 @@ const IDS = {
  * - John Doe: invoice partial then overpayment (₦20,000 wallet credit)
  * - Raphael: DSTV-style monthly MBU with partial June + FIFO clearance in July
  *
- * All amounts are whole NGN (naira).
+ * All monetary amounts are stored in kobo (1 NGN = 100 kobo), matching Nomba webhooks.
+ * Use ngnToKobo() so TASK.md naira figures stay readable in seed code.
  */
 export async function seed(knex: Knex): Promise<void> {
   await knex.raw(`
@@ -95,8 +97,8 @@ export async function seed(knex: Knex): Promise<void> {
     customer_id: IDS.john,
     obligation_type: "INVOICE",
     reference_code: "INV-2026-001",
-    amount: 150_000,
-    amount_paid: 150_000,
+    amount: ngnToKobo(150_000),
+    amount_paid: ngnToKobo(150_000),
     due_date: "2026-05-15",
     status: "PAID",
     metadata: JSON.stringify({
@@ -111,7 +113,7 @@ export async function seed(knex: Knex): Promise<void> {
       business_id: IDS.business,
       virtual_account_id: IDS.johnVa,
       idempotency_key: "seed-john-pay-70000",
-      amount: 70_000,
+      amount: ngnToKobo(70_000),
       sender_name: "John Doe",
       sender_account: "0123456789",
       raw_payload: JSON.stringify({ scenario: "invoice-partial" }),
@@ -122,7 +124,7 @@ export async function seed(knex: Knex): Promise<void> {
       business_id: IDS.business,
       virtual_account_id: IDS.johnVa,
       idempotency_key: "seed-john-pay-100000",
-      amount: 100_000,
+      amount: ngnToKobo(100_000),
       sender_name: "John Doe",
       sender_account: "0123456789",
       raw_payload: JSON.stringify({ scenario: "invoice-overpayment" }),
@@ -136,8 +138,8 @@ export async function seed(knex: Knex): Promise<void> {
       obligation_id: IDS.johnInvoice,
       payment_event_id: IDS.johnPay1,
       entry_type: "CREDIT",
-      amount: 70_000,
-      balance_after: 80_000,
+      amount: ngnToKobo(70_000),
+      balance_after: ngnToKobo(80_000),
       description: "Partial payment applied to INV-2026-001",
       created_at: "2026-05-20T10:00:01Z",
     },
@@ -146,7 +148,7 @@ export async function seed(knex: Knex): Promise<void> {
       obligation_id: IDS.johnInvoice,
       payment_event_id: IDS.johnPay2,
       entry_type: "CREDIT",
-      amount: 80_000,
+      amount: ngnToKobo(80_000),
       balance_after: 0,
       description: "Final payment clears INV-2026-001",
       created_at: "2026-06-01T14:30:01Z",
@@ -156,8 +158,8 @@ export async function seed(knex: Knex): Promise<void> {
       obligation_id: null,
       payment_event_id: IDS.johnPay2,
       entry_type: "CREDIT",
-      amount: 20_000,
-      balance_after: 20_000,
+      amount: ngnToKobo(20_000),
+      balance_after: ngnToKobo(20_000),
       description: "Overpayment credited to customer wallet",
       created_at: "2026-06-01T14:30:02Z",
     },
@@ -166,7 +168,7 @@ export async function seed(knex: Knex): Promise<void> {
   await knex("customer_wallets").insert({
     id: IDS.johnWallet,
     customer_id: IDS.john,
-    balance: 20_000,
+    balance: ngnToKobo(20_000),
     updated_at: "2026-06-01T14:30:02Z",
   });
 
@@ -176,7 +178,7 @@ export async function seed(knex: Knex): Promise<void> {
     business_id: IDS.business,
     customer_id: IDS.raphael,
     obligation_type: "SUBSCRIPTION",
-    amount: 6_000,
+    amount: ngnToKobo(6_000),
     recurrence: "MONTHLY",
     day_of_month: 1,
     next_run_date: "2026-08-01",
@@ -192,8 +194,8 @@ export async function seed(knex: Knex): Promise<void> {
       billing_rule_id: IDS.raphaelBillingRule,
       obligation_type: "SUBSCRIPTION",
       reference_code: "MBU-2026-06",
-      amount: 6_000,
-      amount_paid: 6_000,
+      amount: ngnToKobo(6_000),
+      amount_paid: ngnToKobo(6_000),
       due_date: "2026-06-01",
       status: "PAID",
       metadata: JSON.stringify({ billing_period: "2026-06" }),
@@ -205,8 +207,8 @@ export async function seed(knex: Knex): Promise<void> {
       billing_rule_id: IDS.raphaelBillingRule,
       obligation_type: "SUBSCRIPTION",
       reference_code: "MBU-2026-07",
-      amount: 6_000,
-      amount_paid: 6_000,
+      amount: ngnToKobo(6_000),
+      amount_paid: ngnToKobo(6_000),
       due_date: "2026-07-01",
       status: "PAID",
       metadata: JSON.stringify({ billing_period: "2026-07" }),
@@ -219,7 +221,7 @@ export async function seed(knex: Knex): Promise<void> {
       business_id: IDS.business,
       virtual_account_id: IDS.raphaelVa,
       idempotency_key: "seed-raphael-pay-4400",
-      amount: 4_400,
+      amount: ngnToKobo(4_400),
       sender_name: "Raphael Okonkwo",
       sender_account: "0987654321",
       raw_payload: JSON.stringify({ scenario: "subscription-partial-june" }),
@@ -230,7 +232,7 @@ export async function seed(knex: Knex): Promise<void> {
       business_id: IDS.business,
       virtual_account_id: IDS.raphaelVa,
       idempotency_key: "seed-raphael-pay-7600",
-      amount: 7_600,
+      amount: ngnToKobo(7_600),
       sender_name: "Raphael Okonkwo",
       sender_account: "0987654321",
       raw_payload: JSON.stringify({ scenario: "subscription-fifo-clearance" }),
@@ -244,8 +246,8 @@ export async function seed(knex: Knex): Promise<void> {
       obligation_id: IDS.raphaelJuneObligation,
       payment_event_id: IDS.raphaelPay1,
       entry_type: "CREDIT",
-      amount: 4_400,
-      balance_after: 1_600,
+      amount: ngnToKobo(4_400),
+      balance_after: ngnToKobo(1_600),
       description: "Partial payment applied to MBU-2026-06",
       created_at: "2026-06-10T09:00:01Z",
     },
@@ -254,7 +256,7 @@ export async function seed(knex: Knex): Promise<void> {
       obligation_id: IDS.raphaelJuneObligation,
       payment_event_id: IDS.raphaelPay2,
       entry_type: "CREDIT",
-      amount: 1_600,
+      amount: ngnToKobo(1_600),
       balance_after: 0,
       description: "FIFO: clears remaining June MBU balance",
       created_at: "2026-07-05T11:00:01Z",
@@ -264,7 +266,7 @@ export async function seed(knex: Knex): Promise<void> {
       obligation_id: IDS.raphaelJulyObligation,
       payment_event_id: IDS.raphaelPay2,
       entry_type: "CREDIT",
-      amount: 6_000,
+      amount: ngnToKobo(6_000),
       balance_after: 0,
       description: "FIFO: clears July MBU in full",
       created_at: "2026-07-05T11:00:02Z",

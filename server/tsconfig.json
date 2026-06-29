@@ -11,6 +11,22 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "include": ["index.ts", "config/**/*.ts", "routes/**/*.ts", "nomba/**/*.ts"],
-  "exclude": ["node_modules", "dist", "nomba/__tests__", "scripts", "vitest.config.ts"]
+  "include": [
+    "index.ts",
+    "config/**/*.ts",
+    "db/**/*.ts",
+    "lib/**/*.ts",
+    "middleware/**/*.ts",
+    "routes/**/*.ts",
+    "nomba/**/*.ts",
+    "idempotency/**/*.ts",
+    "redis/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/__tests__/**",
+    "scripts",
+    "vitest.config.ts"
+  ]
 }

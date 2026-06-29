@@ -2,7 +2,7 @@ import type { Knex } from "knex";
 
 /**
  * Reporting views for dashboard and API analytics.
- * Amounts are stored in NGN (whole naira).
+ * Amounts are stored in kobo (1 NGN = 100 kobo), matching Nomba webhooks.
  */
 export async function up(knex: Knex): Promise<void> {
   await knex.raw(`
