@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import type { PoolClient } from "pg";
 import { AppError } from "../lib/AppError";
+import { logger } from "../lib/logger";
 import { pool } from "../db/pool";
 import {
   businessExists,
@@ -55,14 +55,9 @@ function mapNombaVirtualAccount(
 
 function mapNombaError(error: unknown): AppError {
   if (error instanceof NombaApiError) {
-    const statusCode =
-      error instanceof NombaApiError && error.status >= 400 && error.status < 500
-        ? 502
-        : 502;
-
     return new AppError(
       error.description ?? error.message,
-      statusCode,
+      502,
       "NOMBA_API_ERROR",
     );
   }
@@ -72,6 +67,24 @@ function mapNombaError(error: unknown): AppError {
   }
 
   throw error;
+}
+
+async function compensateOrphanedVirtualAccount(
+  nomba: NombaClient,
+  accountRef: string,
+): Promise<void> {
+  try {
+    await nomba.deactivateVirtualAccount(accountRef);
+    logger.warn(
+      { accountRef },
+      "Expired orphaned Nomba virtual account after DB rollback",
+    );
+  } catch (compensationError) {
+    logger.error(
+      { accountRef, err: compensationError },
+      "Failed to expire orphaned Nomba virtual account — manual cleanup required",
+    );
+  }
 }
 
 export class CustomerService {
@@ -86,19 +99,8 @@ export class CustomerService {
 
     const customerId = randomUUID();
     const accountRef = nombaAccountRefForCustomer(customerId);
-
-    let nombaAccount: VirtualAccount;
-    try {
-      nombaAccount = await this.nomba.createCustomerVirtualAccount({
-        accountRef,
-        accountName: input.fullName,
-      });
-    } catch (error) {
-      throw mapNombaError(error);
-    }
-
-    const vaDetails = mapNombaVirtualAccount(nombaAccount);
     const client = await pool.connect();
+    let provisionedAccountRef: string | null = null;
 
     try {
       await client.query("BEGIN");
@@ -113,6 +115,20 @@ export class CustomerService {
       };
 
       await insertCustomer(customerInput, client);
+
+      let nombaAccount: VirtualAccount;
+      try {
+        nombaAccount = await this.nomba.createCustomerVirtualAccount({
+          accountRef,
+          accountName: input.fullName,
+        });
+      } catch (error) {
+        throw mapNombaError(error);
+      }
+
+      const vaDetails = mapNombaVirtualAccount(nombaAccount);
+      provisionedAccountRef = vaDetails.nombaAccountRef;
+
       await insertVirtualAccount(
         {
           id: randomUUID(),
@@ -126,8 +142,14 @@ export class CustomerService {
       await insertCustomerWallet(customerId, client);
 
       await client.query("COMMIT");
+      provisionedAccountRef = null;
     } catch (error) {
       await client.query("ROLLBACK");
+
+      if (provisionedAccountRef) {
+        await compensateOrphanedVirtualAccount(this.nomba, provisionedAccountRef);
+      }
+
       throw error;
     } finally {
       client.release();

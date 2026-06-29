@@ -30,6 +30,10 @@ export class NombaClient {
   getVirtualAccount(identifier: string): Promise<VirtualAccount> {
     return this.virtualAccounts.getVirtualAccount(identifier);
   }
+
+  deactivateVirtualAccount(accountRef: string): Promise<{ expired: boolean }> {
+    return this.virtualAccounts.deactivateVirtualAccount(accountRef);
+  }
 }
 
 export function createNombaClientFromEnv(fetchFn?: FetchFn): NombaClient {

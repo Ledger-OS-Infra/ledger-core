@@ -25,4 +25,10 @@ export class NombaVirtualAccountService {
       `/v1/accounts/virtual/${encodeURIComponent(identifier)}`,
     );
   }
+
+  deactivateVirtualAccount(identifier: string): Promise<{ expired: boolean }> {
+    return this.http.delete<{ expired: boolean }>(
+      `/v1/accounts/virtual/${encodeURIComponent(identifier)}`,
+    );
+  }
 }

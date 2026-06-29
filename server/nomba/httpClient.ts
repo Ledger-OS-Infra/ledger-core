@@ -24,6 +24,10 @@ export class NombaHttpClient {
     });
   }
 
+  async delete<T>(path: string): Promise<T> {
+    return this.request<T>(path, { method: "DELETE" });
+  }
+
   private async request<T>(
     path: string,
     init: RequestInit,
