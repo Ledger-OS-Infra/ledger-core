@@ -1,5 +1,6 @@
 import type { Pool, PoolClient } from "pg";
 import { pool } from "./pool";
+import { AppError } from "../lib/AppError";
 
 type DbClient = Pool | PoolClient;
 
@@ -33,6 +34,17 @@ export async function insertPaymentEvent(
   input: InsertPaymentEventInput,
   client: DbClient = pool,
 ): Promise<PaymentEventRow> {
+  const MAX_PAYLOAD_BYTES = 1024 * 1024; // 1MB
+  const serializedPayload = JSON.stringify(input.rawPayload);
+
+  if (Buffer.byteLength(serializedPayload, "utf8") > MAX_PAYLOAD_BYTES) {
+    throw new AppError(
+      "Payment event payload exceeds maximum allowed size",
+      400,
+      "PAYLOAD_TOO_LARGE",
+    );
+  }
+
   const { rows } = await client.query<PaymentEventRow>(
     `INSERT INTO payment_events (
        business_id,
@@ -54,7 +66,7 @@ export async function insertPaymentEvent(
       input.transactionAmount,
       input.senderName ?? null,
       input.senderAccount ?? null,
-      JSON.stringify(input.rawPayload),
+      serializedPayload,
       input.receivedAt,
       input.isMatched,
     ],

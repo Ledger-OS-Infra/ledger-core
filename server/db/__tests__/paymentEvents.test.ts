@@ -88,4 +88,29 @@ describe("insertPaymentEvent", () => {
     expect(params[1]).toBeNull();
     expect(params[8]).toBe(false);
   });
+
+  it("rejects a payload exceeding the 1MB size limit", async () => {
+    const mockClient = {
+      query: vi.fn(),
+    };
+
+    const oversizedPayload = {
+      junk: "x".repeat(1024 * 1024 + 1),
+    };
+
+    await expect(
+      insertPaymentEvent(
+        {
+          transactionId: "txn_oversized",
+          transactionAmount: 1000,
+          isMatched: false,
+          rawPayload: oversizedPayload,
+          receivedAt: new Date(),
+        },
+        mockClient as any,
+      ),
+    ).rejects.toThrow("Payment event payload exceeds maximum allowed size");
+
+    expect(mockClient.query).not.toHaveBeenCalled();
+  });
 });

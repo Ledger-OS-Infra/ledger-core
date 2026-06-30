@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { env } from "../config/env";
 import { logger } from "../lib/logger";
-import { claimEvent } from "../idempotency/claimEvent";
+import { claimEvent, releaseEvent } from "../idempotency/claimEvent";
 import { insertPaymentEvent } from "../db/paymentEvents";
 import {
   verifyNombaWebhookSignature,
@@ -14,9 +14,11 @@ export const webhooksRouter = Router();
 // db/customers.ts once #39 (issue #7) merges into main. Always returns "no
 // match" for now, so every webhook is intentionally treated as unmatched
 // until then. Swapping this for the real import is a one-line change.
-async function findCustomerStub(
-  _accountNumber: string,
-): Promise<{ customerId: string; businessId: string; virtualAccountId: string } | null> {
+async function findCustomerStub(_accountNumber: string): Promise<{
+  customerId: string;
+  businessId: string;
+  virtualAccountId: string;
+} | null> {
   return null;
 }
 
@@ -72,6 +74,15 @@ webhooksRouter.post(
       return;
     }
 
+    if (transactionAmount <= 0) {
+      logger.warn(
+        { transactionAmount, transactionId },
+        "Webhook payload has non-positive transactionAmount",
+      );
+      res.status(400).json({ error: "Transaction amount must be positive" });
+      return;
+    }
+
     const isNew = await claimEvent(transactionId);
 
     if (!isNew) {
@@ -82,9 +93,7 @@ webhooksRouter.post(
     // Resolve customer via virtual account lookup. Stubbed until #39 merges,
     // see findCustomerStub above.
     const accountNumber = payload.data?.transaction?.aliasAccountNumber;
-    const match = accountNumber
-      ? await findCustomerStub(accountNumber)
-      : null;
+    const match = accountNumber ? await findCustomerStub(accountNumber) : null;
 
     if (!match) {
       logger.warn(
@@ -116,9 +125,10 @@ webhooksRouter.post(
         receivedAt: new Date(),
       });
     } catch (err) {
+      await releaseEvent(transactionId);
       logger.error(
         { err, transactionId },
-        "Failed to persist payment event after claiming it in Redis, event may be lost on retry",
+        "Failed to persist payment event, released Redis claim so retry won't be skipped as duplicate",
       );
       res.status(500).json({ error: "Failed to persist payment event" });
       return;
