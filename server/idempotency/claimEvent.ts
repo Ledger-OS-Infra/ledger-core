@@ -16,3 +16,8 @@ export async function claimEvent(eventId: string): Promise<boolean> {
 
   return true;
 }
+
+export async function releaseEvent(eventId: string): Promise<void> {
+  const key = KEY_PREFIX + eventId;
+  await redis.del(key);
+}
