@@ -1,0 +1,438 @@
+{
+  "info": {
+    "_postman_id": "c4e8f1a2-9b3d-4f6e-a1c2-8d7e6f5a4b3c",
+    "name": "Ledger-Core API",
+    "description": "Run requests in order inside **Flow - start from scratch**. Each step saves IDs into the environment.\n\nPrerequisites: docker compose up, npm run migrate, npm run dev, select Ledger-Core - Local environment.\n\nAmounts are kobo (NGN x 100).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Flow - start from scratch",
+      "description": "Run steps 1-11 in order. Test scripts save customerId, obligationId, and VA details.",
+      "item": [
+        {
+          "name": "1. Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2. Create customer (+ Nomba VA)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Created customer', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    var data = json.data;",
+                  "    pm.environment.set('customerId', data.id);",
+                  "    pm.environment.set('customerAccountNumber', data.virtual_account.account_number);",
+                  "    pm.environment.set('nombaAccountRef', data.virtual_account.nomba_account_ref);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": \"{{businessId}}\",\n  \"full_name\": \"Postman Customer {{$timestamp}}\",\n  \"email\": \"postman-{{$timestamp}}@example.com\",\n  \"phone\": \"+2348019999999\",\n  \"metadata\": { \"source\": \"postman-flow\" }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"]
+            },
+            "description": "Calls Nomba to provision a VA. Requires sandbox credentials in server .env."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Get customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Customer found', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4. Create invoice obligation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Created obligation', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "    var data = pm.response.json().data;",
+                  "    pm.environment.set('obligationId', data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"INVOICE\",\n  \"amount\": {{amountInvoiceKobo}},\n  \"due_date\": \"2026-09-15\",\n  \"reference_code\": \"INV-POSTMAN-{{$timestamp}}\",\n  \"metadata\": { \"description\": \"Postman flow invoice\" }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/obligations",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}", "obligations"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "5. List obligations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/obligations",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}", "obligations"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "6. Get obligation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/obligations/{{obligationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["obligations", "{{obligationId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "7. Patch obligation (metadata)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"metadata\": { \"note\": \"Updated in Postman flow step 7\" }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/obligations/{{obligationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["obligations", "{{obligationId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "8. Lookup customer by VA number",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers?account_number={{customerAccountNumber}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"],
+              "query": [
+                {
+                  "key": "account_number",
+                  "value": "{{customerAccountNumber}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "9. Nomba webhook (signed payment)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var secret = pm.environment.get('nombaWebhookSecret');",
+                  "var accountNumber = pm.environment.get('customerAccountNumber');",
+                  "var accountRef = pm.environment.get('nombaAccountRef');",
+                  "if (!accountNumber || !accountRef) {",
+                  "    throw new Error('Run step 2 first.');",
+                  "}",
+                  "var timestamp = new Date().toISOString();",
+                  "var transactionId = 'txn_postman_' + Date.now();",
+                  "var requestId = 'req_postman_' + Date.now();",
+                  "var payload = {",
+                  "    event_type: 'payment_success',",
+                  "    requestId: requestId,",
+                  "    data: {",
+                  "        merchant: {",
+                  "            userId: pm.environment.get('webhookMerchantUserId'),",
+                  "            walletId: pm.environment.get('webhookMerchantWalletId')",
+                  "        },",
+                  "        transaction: {",
+                  "            transactionId: transactionId,",
+                  "            type: 'vact_transfer',",
+                  "            time: timestamp,",
+                  "            responseCode: '',",
+                  "            aliasAccountNumber: accountNumber,",
+                  "            aliasAccountName: 'Postman/Test Customer',",
+                  "            aliasAccountReference: accountRef,",
+                  "            transactionAmount: Number(pm.environment.get('webhookAmountKobo'))",
+                  "        },",
+                  "        customer: {",
+                  "            senderName: 'Postman Test Sender',",
+                  "            bankName: 'Test Bank',",
+                  "            accountNumber: '0123456789'",
+                  "        }",
+                  "    }",
+                  "};",
+                  "var t = payload.data.transaction;",
+                  "var m = payload.data.merchant;",
+                  "var responseCode = t.responseCode || '';",
+                  "if (responseCode === 'null') { responseCode = ''; }",
+                  "var hashingPayload = [",
+                  "    payload.event_type,",
+                  "    payload.requestId,",
+                  "    m.userId,",
+                  "    m.walletId,",
+                  "    t.transactionId,",
+                  "    t.type,",
+                  "    t.time,",
+                  "    responseCode,",
+                  "    timestamp",
+                  "].join(':');",
+                  "var signature = CryptoJS.HmacSHA256(hashingPayload, secret).toString(CryptoJS.enc.Base64);",
+                  "pm.request.headers.upsert({ key: 'nomba-signature', value: signature });",
+                  "pm.request.headers.upsert({ key: 'nomba-timestamp', value: timestamp });",
+                  "pm.request.headers.upsert({ key: 'Content-Type', value: 'application/json' });",
+                  "pm.request.body.update(JSON.stringify(payload, null, 2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/nomba",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks", "nomba"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "10. Business metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/business/{{businessId}}/metrics",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "business", "{{businessId}}", "metrics"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "11. Obligation payment history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/obligations/{{obligationId}}/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "obligations", "{{obligationId}}", "payments"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reference endpoints",
+      "item": [
+        {
+          "name": "Create customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var data = pm.response.json().data;",
+                  "    pm.environment.set('customerId', data.id);",
+                  "    pm.environment.set('customerAccountNumber', data.virtual_account.account_number);",
+                  "    pm.environment.set('nombaAccountRef', data.virtual_account.nomba_account_ref);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": \"{{businessId}}\",\n  \"full_name\": \"Postman Customer\",\n  \"email\": \"postman@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List customers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers?business_id={{businessId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{businessId}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create subscription obligation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"SUBSCRIPTION\",\n  \"amount\": {{amountMbuKobo}},\n  \"due_date\": \"2026-10-01\",\n  \"reference_code\": \"MBU-TEST\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/obligations",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}", "obligations"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Business aging report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/business/{{businessId}}/aging",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "business", "{{businessId}}", "aging"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
