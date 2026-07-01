@@ -5,9 +5,10 @@ import { PageHeader } from '@/components/page-header'
 import { Card, CardContent } from '@/components/ui/card'
 import { StatBlock } from '@/components/stat-block'
 import { Badge } from '@/components/ui/badge'
-import { reportingApi } from '@/lib/api'
+import { reportingClient } from '@/lib/api'
 import { formatCurrency, formatCurrencyShort } from '@/lib/currency'
 import { mockCustomers, mockObligations, mockTransactions } from '@/lib/mock-data'
+import { calculateAgingBuckets } from '@/lib/obligations'
 import { MdWarning } from 'react-icons/md'
 
 const BUSINESS_ID = 'demo-business'
@@ -18,8 +19,8 @@ export default function DashboardPage() {
     queryFn: async () => {
       try {
         const [metrics, aging] = await Promise.all([
-          reportingApi.getBusinessMetrics(BUSINESS_ID),
-          reportingApi.listAging(BUSINESS_ID),
+          reportingClient.getBusinessMetrics(BUSINESS_ID),
+          reportingClient.listAging(BUSINESS_ID),
         ])
 
         return {
@@ -27,81 +28,55 @@ export default function DashboardPage() {
           agingSummary: aging.summary,
         }
       } catch {
+        // Fallback: derive metrics from mock data when the API is unavailable
         return {
           metrics: {
-            customerCount: mockCustomers.length,
-            totalOutstanding: mockCustomers.reduce((sum, customer) => sum + customer.outstanding, 0),
+            totalOutstanding: mockCustomers.reduce((sum, c) => sum + c.outstanding, 0),
             overdueAmount: mockCustomers
-              .filter((customer) => customer.status === 'overdue')
-              .reduce((sum, customer) => sum + customer.outstanding, 0),
+              .filter((c) => c.status === 'overdue')
+              .reduce((sum, c) => sum + c.outstanding, 0),
+            overdueObligationCount: mockCustomers.filter((c) => c.status === 'overdue').length,
+            totalInflow: 0,
+            totalWalletCredit: mockCustomers.reduce((sum, c) => sum + c.walletCredit, 0),
           },
-          agingSummary: {
-            '0-30': 0,
-            '31-60': 0,
-            '61-90': 0,
-            '90+': 0,
-          },
+          agingSummary: { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 },
         }
       }
     },
     staleTime: 60_000,
   })
 
+  // Fallback mirrors the shape above when data hasn't loaded yet
   const dashboardMetrics = dashboardData?.metrics ?? {
-    customerCount: mockCustomers.length,
-    totalOutstanding: mockCustomers.reduce((sum, customer) => sum + customer.outstanding, 0),
+    totalOutstanding: mockCustomers.reduce((sum, c) => sum + c.outstanding, 0),
     overdueAmount: mockCustomers
-      .filter((customer) => customer.status === 'overdue')
-      .reduce((sum, customer) => sum + customer.outstanding, 0),
+      .filter((c) => c.status === 'overdue')
+      .reduce((sum, c) => sum + c.outstanding, 0),
+    overdueObligationCount: mockCustomers.filter((c) => c.status === 'overdue').length,
+    totalInflow: 0,
+    totalWalletCredit: mockCustomers.reduce((sum, c) => sum + c.walletCredit, 0),
   }
 
   // Calculate metrics
   const thisMonth = new Date()
   const thisMonthStart = new Date(thisMonth.getFullYear(), thisMonth.getMonth(), 1)
-  
+
   const inflowThisMonth = mockTransactions
     .filter((t) => t.date >= thisMonthStart)
     .reduce((sum, t) => sum + t.amount, 0)
 
   const totalOutstanding = dashboardMetrics.totalOutstanding
-
   const totalOverdue = dashboardMetrics.overdueAmount
-
-  const activeCustomers = dashboardMetrics.customerCount
-
+  // The API doesn't return a total customer count; use mock length as a stand-in
+  const activeCustomers = mockCustomers.length
   const unmatchedTransactions = mockTransactions.filter((t) => t.status === 'unmatched')
 
-  // Aging buckets
-  const today = new Date()
-  const agingBuckets = {
-    '0-30': 0,
-    '31-60': 0,
-    '61-90': 0,
-    '90+': 0,
-  }
-
-  mockObligations
-    .filter((o) => o.status !== 'paid')
-    .forEach((o) => {
-      const daysOverdue = Math.floor(
-        (today.getTime() - o.dueDate.getTime()) / (1000 * 60 * 60 * 24)
-      )
-      if (daysOverdue < 0) {
-        agingBuckets['0-30'] += o.amount
-      } else if (daysOverdue < 31) {
-        agingBuckets['0-30'] += o.amount
-      } else if (daysOverdue < 61) {
-        agingBuckets['31-60'] += o.amount
-      } else if (daysOverdue < 91) {
-        agingBuckets['61-90'] += o.amount
-      } else {
-        agingBuckets['90+'] += o.amount
-      }
-    })
-
+  // Aging buckets — computed via shared utility
+  const agingBuckets = calculateAgingBuckets(mockObligations)
   const maxAging = Math.max(...Object.values(agingBuckets))
 
   const recentTransactions = mockTransactions.slice(0, 5)
+
 
   return (
     <div>

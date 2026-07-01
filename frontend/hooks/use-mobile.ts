@@ -12,15 +12,15 @@ export function useIsMobile() {
   })
 
   React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
+    const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
     const onChange = (event: MediaQueryListEvent | MediaQueryList) => {
       setIsMobile(event.matches)
     }
 
-    onChange(mql)
-    mql.addEventListener("change", onChange)
+    onChange(mediaQuery)
+    mediaQuery.addEventListener("change", onChange)
 
-    return () => mql.removeEventListener("change", onChange)
+    return () => mediaQuery.removeEventListener("change", onChange)
   }, [])
 
   return isMobile

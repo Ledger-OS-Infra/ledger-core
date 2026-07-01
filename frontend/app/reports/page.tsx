@@ -5,57 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ButtonCustom } from '@/components/ui/button-custom'
 import { formatCurrency } from '@/lib/currency'
 import { mockCustomers, mockObligations } from '@/lib/mock-data'
+import { calculateDetailedAgingBuckets } from '@/lib/obligations'
+import { getMonthlyInflowData } from '@/lib/inflow'
 import { MdDownload, MdFileDownload } from 'react-icons/md'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 export default function ReportsPage() {
-  // Calculate inflow by month for the last 6 months
-  const today = new Date()
-  const monthlyInflow: { month: string; amount: number }[] = []
-
-  // Sample inflow data for visualization
-  const sampleInflowData = [
-    { months: 5, amount: 420000 },  // January
-    { months: 4, amount: 580000 },  // February
-    { months: 3, amount: 390000 },  // March
-    { months: 2, amount: 650000 },  // April
-    { months: 1, amount: 510000 },  // May
-    { months: 0, amount: 720000 },  // June
-  ]
-
-  sampleInflowData.forEach(({ months, amount }) => {
-    const date = new Date(today.getFullYear(), today.getMonth() - months, 1)
-    const monthName = date.toLocaleDateString('en-NG', {
-      month: 'short',
-    })
-    monthlyInflow.push({ month: monthName, amount })
-  })
-
-  monthlyInflow.reverse()
-
-  // Calculate aging buckets
-  const agingBuckets = {
-    '0-30': { count: 0, amount: 0 },
-    '31-60': { count: 0, amount: 0 },
-    '61-90': { count: 0, amount: 0 },
-    '90+': { count: 0, amount: 0 },
-  }
-
-  mockObligations
-    .filter((o) => o.status !== 'paid')
-    .forEach((o) => {
-      const daysOverdue = Math.floor(
-        (today.getTime() - o.dueDate.getTime()) / (1000 * 60 * 60 * 24)
-      )
-      let bucket: keyof typeof agingBuckets = '0-30'
-      if (daysOverdue >= 31 && daysOverdue < 61) bucket = '31-60'
-      if (daysOverdue >= 61 && daysOverdue < 91) bucket = '61-90'
-      if (daysOverdue >= 91) bucket = '90+'
-
-      agingBuckets[bucket].count += 1
-      agingBuckets[bucket].amount += o.amount
-    })
-
+  const monthlyInflow = getMonthlyInflowData()
+  const agingBuckets = calculateDetailedAgingBuckets(mockObligations)
   const maxAmount = Math.max(...Object.values(agingBuckets).map((b) => b.amount))
 
   return (
@@ -90,7 +47,7 @@ export default function ReportsPage() {
                   style={{ fontSize: '12px' }}
                 />
                 <Tooltip 
-                  formatter={(value: number) => formatCurrency(value)}
+                  formatter={(value) => formatCurrency(Number(value ?? 0))}
                   contentStyle={{
                     backgroundColor: 'var(--card)',
                     border: '1px solid var(--border)',
