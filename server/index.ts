@@ -3,7 +3,7 @@ import express from "express";
 import { env } from "./config/env";
 import { webhooksRouter } from "./routes/webhooks";
 import { reportingRouter } from "./routes/reporting";
-
+import { obligationsRouter } from "./routes/obligations";
 import { customersRouter } from "./routes/customers";
 
 import { obligationsRouter } from "./routes/obligations";
