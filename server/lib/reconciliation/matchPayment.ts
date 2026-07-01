@@ -1,5 +1,4 @@
-import type { PaymentObligationRow } from "../../db/obligations";
-
+import type { PaymentObligationRow } from "../obligations/format";
 export interface MatchResult {
   obligation: PaymentObligationRow;
   amountToApply: number;
@@ -73,7 +72,10 @@ export function matchPayment(
   // the reference code from the webhook payload
   if (referenceCode) {
     const refMatch =
-      open.find((o) => o.reference_code === referenceCode) ?? null;
+      open.find(
+        (o) =>
+          o.reference_code !== null && referenceCode.includes(o.reference_code),
+      ) ?? null;
     if (refMatch) {
       return buildResult(refMatch, paymentAmount, "reference");
     }
