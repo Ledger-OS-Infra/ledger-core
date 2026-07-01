@@ -328,6 +328,276 @@
       ]
     },
     {
+      "name": "Flow - subscription billing (DSTV)",
+      "description": "DSTV-style monthly MBU auto-generation. Run steps 1-6 in order after **Flow - start from scratch** steps 1-2 (customer must exist), or run step 1 here if you already have customerId in the environment.",
+      "item": [
+        {
+          "name": "1. Create billing rule (monthly MBU)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Created billing rule', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "    var data = pm.response.json().data;",
+                  "    pm.environment.set('billingRuleId', data.id);",
+                  "    pm.test('next_run_date is start_date', function () {",
+                  "        pm.expect(data.next_run_date).to.eql('2026-06-01');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"obligation_type\": \"SUBSCRIPTION\",\n  \"amount\": {{amountMbuKobo}},\n  \"frequency\": \"MONTHLY\",\n  \"day_of_month\": 1,\n  \"start_date\": \"2026-06-01\",\n  \"metadata\": { \"product\": \"DSTV Premium\", \"mbu_label\": \"Monthly Billing Unit\" }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/billing-rules",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}", "billing-rules"]
+            },
+            "description": "Creates a monthly ₦6,000 subscription rule due on the 1st. Requires customerId from main flow step 2."
+          },
+          "response": []
+        },
+        {
+          "name": "2. List billing rules",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Billing rules listed', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var rules = pm.response.json().data;",
+                  "pm.test('At least one active rule', function () {",
+                  "    pm.expect(rules.length).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/billing-rules",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}", "billing-rules"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3. Generate due obligations (through Jul 1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Generation succeeded', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var results = pm.response.json().data.results;",
+                  "var refs = results.map(function (r) { return r.reference_code; });",
+                  "pm.test('MBU-2026-06 created', function () {",
+                  "    pm.expect(refs).to.include('MBU-2026-06');",
+                  "});",
+                  "pm.test('MBU-2026-07 created', function () {",
+                  "    pm.expect(refs).to.include('MBU-2026-07');",
+                  "});",
+                  "var created = results.filter(function (r) { return r.created; });",
+                  "pm.test('Two new obligations', function () {",
+                  "    pm.expect(created.length).to.eql(2);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"as_of_date\": \"{{billingAsOfDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/billing/jobs/generate-due",
+              "host": ["{{baseUrl}}"],
+              "path": ["billing", "jobs", "generate-due"]
+            },
+            "description": "Manual trigger for testing. Creates Jun 1 and Jul 1 MBU obligations when as_of_date is 2026-07-01."
+          },
+          "response": []
+        },
+        {
+          "name": "4. List subscription obligations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Obligations listed', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var items = pm.response.json().data;",
+                  "var subs = items.filter(function (o) { return o.type === 'SUBSCRIPTION'; });",
+                  "var refs = subs.map(function (o) { return o.reference_code; });",
+                  "pm.test('Has MBU references', function () {",
+                  "    pm.expect(refs).to.include('MBU-2026-06');",
+                  "    pm.expect(refs).to.include('MBU-2026-07');",
+                  "});",
+                  "if (subs.length > 0) {",
+                  "    pm.environment.set('obligationId', subs[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/obligations?type=SUBSCRIPTION",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}", "obligations"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "SUBSCRIPTION"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "5. Generate due again (idempotent)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Idempotent re-run OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var results = pm.response.json().data.results;",
+                  "var created = results.filter(function (r) { return r.created; });",
+                  "pm.test('No duplicate obligations created', function () {",
+                  "    pm.expect(created.length).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"as_of_date\": \"{{billingAsOfDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/billing/jobs/generate-due",
+              "host": ["{{baseUrl}}"],
+              "path": ["billing", "jobs", "generate-due"]
+            },
+            "description": "Re-running with the same as_of_date must not create duplicate MBU rows."
+          },
+          "response": []
+        },
+        {
+          "name": "6. Generate for single rule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Single-rule generate OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var results = pm.response.json().data.results;",
+                  "var created = results.filter(function (r) { return r.created; });",
+                  "pm.test('Nothing new to generate', function () {",
+                  "    pm.expect(created.length).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"as_of_date\": \"{{billingAsOfDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/billing-rules/{{billingRuleId}}/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["billing-rules", "{{billingRuleId}}", "generate"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Reference endpoints",
       "item": [
         {
@@ -415,6 +685,73 @@
               "raw": "{{baseUrl}}/customers/{{customerId}}/obligations",
               "host": ["{{baseUrl}}"],
               "path": ["customers", "{{customerId}}", "obligations"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create billing rule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set('billingRuleId', pm.response.json().data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"obligation_type\": \"SUBSCRIPTION\",\n  \"amount\": {{amountMbuKobo}},\n  \"frequency\": \"MONTHLY\",\n  \"day_of_month\": 1,\n  \"start_date\": \"2026-06-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/billing-rules",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}", "billing-rules"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Generate due obligations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"as_of_date\": \"{{billingAsOfDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/billing/jobs/generate-due",
+              "host": ["{{baseUrl}}"],
+              "path": ["billing", "jobs", "generate-due"]
             }
           },
           "response": []
