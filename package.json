@@ -7,6 +7,8 @@
     "prepare": "husky",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
+    "docker:prod:up": "docker compose -f docker-compose.prod.yml up -d --build",
+    "docker:prod:down": "docker compose -f docker-compose.prod.yml down",
     "db:migrate": "npm run migrate --prefix server",
     "db:seed": "npm run seed --prefix server",
     "db:setup": "npm run db:setup --prefix server",
