@@ -19,7 +19,7 @@ describe("money", () => {
   it("rejects negative naira and kobo", () => {
     expect(() => ngnToKobo(-1)).toThrow("NGN amount cannot be negative");
     expect(() => koboToNgn(-100)).toThrow("Kobo amount cannot be negative");
-    expect(() => assertKoboAmount(-100)).toThrow("amount must be at least 1");
+    expect(() => assertKoboAmount(-100)).toThrow("amount cannot be negative");
     expect(() => assertKoboAmount(0)).toThrow("amount must be at least 1");
   });
 });

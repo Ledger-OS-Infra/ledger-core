@@ -11,12 +11,12 @@ function assertWholeInteger(
     throw new Error(`${field} must be a whole number`);
   }
 
+  if (amount < 0) {
+    throw new Error(`${field} cannot be negative`);
+  }
+
   if (amount < minimum) {
-    throw new Error(
-      minimum === MINIMUM_AMOUNT
-        ? `${field} cannot be negative`
-        : `${field} must be at least ${minimum}`,
-    );
+    throw new Error(`${field} must be at least ${minimum}`);
   }
 }
 

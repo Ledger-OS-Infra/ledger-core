@@ -1,5 +1,6 @@
 import { Worker } from "bullmq";
 import { generateDueObligations } from "../lib/billing/generateObligations";
+import { logger } from "../lib/logger";
 import {
   BILLING_OBLIGATION_QUEUE,
   GENERATE_DUE_JOB,
@@ -28,17 +29,26 @@ export async function startBillingObligationWorker(): Promise<Worker> {
   );
 
   worker.on("failed", (job, err) => {
-    console.error(`Billing job ${job?.id} failed`, err);
+    logger.error(
+      { err, jobId: job?.id, jobName: job?.name, queue: BILLING_OBLIGATION_QUEUE },
+      "Billing obligation job failed",
+    );
   });
 
   worker.on("completed", (job) => {
     const result = job.returnvalue as { results?: unknown[] } | undefined;
     const count = result?.results?.length ?? 0;
-    console.info(`Billing job ${job.id} completed (${count} obligation(s) processed)`);
+    logger.info(
+      { jobId: job.id, jobName: job.name, obligationsProcessed: count },
+      "Billing obligation job completed",
+    );
   });
 
   await registerBillingCron();
-  console.info("Billing obligation worker started (cron: daily 00:00 UTC)");
+  logger.info(
+    { queue: BILLING_OBLIGATION_QUEUE, cron: "0 0 * * *" },
+    "Billing obligation worker started",
+  );
 
   return worker;
 }
