@@ -69,8 +69,8 @@ export function Sidebar() {
                 height={32}
                 className="h-8 w-8 object-contain"
               />
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold">Ledger Core</span>
+              <div className="flex items-center self-end gap-2">
+                <span className="text-sm font-semibold">Ledger</span>
                 <div className="sidebar-logo-dot" />
               </div>
             </div>
