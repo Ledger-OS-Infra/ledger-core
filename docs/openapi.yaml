@@ -1,0 +1,171 @@
+openapi: 3.0.3
+info:
+  title: Ledger-Core Reporting API
+  version: 1.0.0
+  description: |
+    REST endpoints for the admin dashboard and external reporting consumers.
+    Amounts are **kobo** integers (1 NGN = 100 kobo).
+
+servers:
+  - url: http://localhost:3050
+    description: Local development
+
+tags:
+  - name: Business
+  - name: Customer
+  - name: Obligation
+
+paths:
+  /reporting/business/{businessId}/metrics:
+    get:
+      tags: [Business]
+      summary: Business metrics
+      description: Total inflow, outstanding, overdue summary, and wallet credit.
+      parameters:
+        - $ref: "#/components/parameters/businessId"
+      responses:
+        "200":
+          description: Business metrics
+        "404":
+          description: Business not found
+
+  /reporting/business/{businessId}/customers:
+    get:
+      tags: [Business]
+      summary: Customer balance list
+      description: Paginated customer balances from `v_customer_balance_summary`.
+      parameters:
+        - $ref: "#/components/parameters/businessId"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: Paginated customer balances
+
+  /reporting/business/{businessId}/aging:
+    get:
+      tags: [Business]
+      summary: Aging report
+      description: |
+        Open obligations with 30/60/90-day buckets plus per-bucket summary.
+        Uses `v_obligation_aging` and `v_obligation_aging_summary`.
+      parameters:
+        - $ref: "#/components/parameters/businessId"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - name: bucket
+          in: query
+          schema:
+            type: string
+            enum:
+              - current
+              - 1_30_days
+              - 31_60_days
+              - 61_90_days
+              - 90_plus_days
+      responses:
+        "200":
+          description: Paginated obligations and bucket summary
+
+  /reporting/customers/{customerId}:
+    get:
+      tags: [Customer]
+      summary: Customer view
+      description: Balance summary (outstanding, wallet credit, net balance).
+      parameters:
+        - $ref: "#/components/parameters/customerId"
+      responses:
+        "200":
+          description: Customer balance summary
+        "404":
+          description: Customer not found
+
+  /reporting/customers/{customerId}/obligations:
+    get:
+      tags: [Customer]
+      summary: Customer outstanding obligations
+      parameters:
+        - $ref: "#/components/parameters/customerId"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: Paginated open obligations
+
+  /reporting/customers/{customerId}/ledger:
+    get:
+      tags: [Customer]
+      summary: Customer ledger history
+      description: Immutable ledger entries from `v_customer_ledger_history`.
+      parameters:
+        - $ref: "#/components/parameters/customerId"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: Paginated ledger history
+
+  /reporting/obligations/{obligationId}:
+    get:
+      tags: [Obligation]
+      summary: Obligation view
+      description: Status, aging bucket, and amounts from `v_obligation_detail`.
+      parameters:
+        - $ref: "#/components/parameters/obligationId"
+      responses:
+        "200":
+          description: Obligation detail
+        "404":
+          description: Obligation not found
+
+  /reporting/obligations/{obligationId}/payments:
+    get:
+      tags: [Obligation]
+      summary: Obligation payment history
+      description: Ledger allocations linked to payment events.
+      parameters:
+        - $ref: "#/components/parameters/obligationId"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: Paginated payment allocations (empty list if none yet)
+
+components:
+  parameters:
+    businessId:
+      name: businessId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    customerId:
+      name: customerId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    obligationId:
+      name: obligationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20

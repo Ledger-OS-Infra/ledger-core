@@ -2,6 +2,8 @@
 
 Create customers, obligations, billing rules, and webhooks via the Postman flow; verify rows in TablePlus.
 
+**No seed data** — everything is created through these API requests.
+
 ## Quick start
 
 1. **Infra + schema + tenant row**
@@ -19,7 +21,7 @@ Create customers, obligations, billing rules, and webhooks via the Postman flow;
    - Import `Ledger-Core.postman_collection.json`
    - Select **Ledger-Core - Local**
 
-3. **Run** folder **Flow - start from scratch** (steps 1–11 in order).
+3. **Run** folder **Flow - start from scratch** (steps 1–17 in order).
 
 4. **Optional — subscription billing:** folder **Flow - subscription billing (DSTV)** (steps 1–6). Requires steps 1–2 from the main flow so `customerId` is set.
 
@@ -33,6 +35,7 @@ Create customers, obligations, billing rules, and webhooks via the Postman flow;
 | DSTV 1. Billing rule | `billing_rules` | Monthly ₦6,000, due on 1st |
 | DSTV 3. Generate due | `payment_obligations` | Auto-creates `MBU-YYYY-MM` rows |
 | 9. Webhook | `payment_events` | Redis idempotency key |
+| 10–17. Reporting | — | Read-only; uses env IDs from earlier steps |
 
 ## Environment variables
 
@@ -84,7 +87,7 @@ SELECT id, full_name, email, created_at FROM customers ORDER BY created_at DESC;
 SELECT idempotency_key, amount, received_at FROM payment_events ORDER BY created_at DESC;
 ```
 
-## Fresh database (no seed)
+## Fresh database
 
 ```bash
 docker compose down -v
@@ -93,10 +96,12 @@ npm run migrate --prefix server
 npm run db:bootstrap --prefix server
 ```
 
+Then re-run the Postman flows from step 1.
+
 ## Amounts
 
 All `amount` fields are **kobo**: ₦1,500 → `150000`, ₦6,000 → `600000`.
 
-## Optional demo seed
+## Reporting API
 
-`npm run seed` loads John/Raphael TASK.md scenarios — **not needed** for Postman manual testing.
+OpenAPI spec: [`docs/openapi.yaml`](../docs/openapi.yaml). Main flow steps 10–17 exercise all reporting endpoints using `{{businessId}}`, `{{customerId}}`, and `{{obligationId}}`.

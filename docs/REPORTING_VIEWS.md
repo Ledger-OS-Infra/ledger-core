@@ -1,9 +1,10 @@
 # Reporting views
 
-PostgreSQL views for dashboard and API reporting. Amounts are whole **NGN**.
+PostgreSQL views for dashboard and API reporting. Amounts are **kobo** integers (1 NGN = 100 kobo).
 
-**Migrations:** `20260627100001_reporting_views.ts`, `20260627100002_update_reporting_views.ts`  
-**API:** `GET /reporting/*` (see [API endpoints](#api-endpoints))
+**Migrations:** `20260627100001_reporting_views.ts`, `20260627100002_update_reporting_views.ts`, `20260630100000_reporting_detail_views.ts`  
+**API:** `GET /reporting/*` (see [API endpoints](#api-endpoints))  
+**OpenAPI:** [`docs/openapi.yaml`](./openapi.yaml)
 
 ---
 
@@ -106,9 +107,21 @@ SELECT
   payment_amount,
   sender_name
 FROM v_obligation_payment_history
-WHERE obligation_id = '11111111-1111-1111-1111-111111111401'
+WHERE obligation_id = '<obligationId from Postman>'
 ORDER BY allocated_at;
 ```
+
+---
+
+### `v_customer_ledger_history`
+
+Ledger entries per customer with linked obligation and payment event details.
+
+---
+
+### `v_obligation_detail`
+
+All obligations (any status) with aging bucket and outstanding balance.
 
 ---
 
@@ -116,14 +129,36 @@ ORDER BY allocated_at;
 
 Base URL: `http://localhost:3050` (see `PORT` in `server/.env`).
 
+All list endpoints support `?page=1&limit=20` (max `limit=100`).
+
 | Method | Path | View(s) used |
 |--------|------|--------------|
 | `GET` | `/reporting/business/:businessId/metrics` | `v_business_metrics` |
 | `GET` | `/reporting/business/:businessId/customers` | `v_customer_balance_summary` |
 | `GET` | `/reporting/business/:businessId/aging` | `v_obligation_aging`, `v_obligation_aging_summary` |
+| `GET` | `/reporting/customers/:customerId` | `v_customer_balance_summary` |
+| `GET` | `/reporting/customers/:customerId/obligations` | `v_obligation_aging` |
+| `GET` | `/reporting/customers/:customerId/ledger` | `v_customer_ledger_history` |
+| `GET` | `/reporting/obligations/:obligationId` | `v_obligation_detail` |
 | `GET` | `/reporting/obligations/:obligationId/payments` | `v_obligation_payment_history` |
 
-**Example — business metrics (dev seed)**
+### Pagination response shape
+
+```json
+{
+  "data": [],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 0,
+    "total_pages": 0
+  }
+}
+```
+
+The aging endpoint nests paginated obligations inside `data.obligations` and returns `data.summary` for bucket totals.
+
+**Example — business metrics (after Postman bootstrap)**
 
 ```bash
 curl http://localhost:3050/reporting/business/11111111-1111-1111-1111-111111111101/metrics
@@ -147,15 +182,9 @@ curl http://localhost:3050/reporting/business/11111111-1111-1111-1111-1111111111
 
 ---
 
-## Dev seed IDs
+## Postman testing
 
-Use these when testing against `npm run seed --prefix server`:
-
-| Entity   | UUID |
-|----------|------|
-| Business | `11111111-1111-1111-1111-111111111101` |
-| John invoice obligation | `11111111-1111-1111-1111-111111111401` |
-| Raphael June MBU | `11111111-1111-1111-1111-111111111403` |
+Use env vars from the Postman flows (`businessId`, `customerId`, `obligationId`) — see [`postman/README.md`](../postman/README.md). No seed data required.
 
 ---
 

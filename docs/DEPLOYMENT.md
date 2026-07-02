@@ -104,11 +104,7 @@ Expected: `{"status":"ok"}`
 
 Open `http://localhost:8080` in a browser for the dashboard.
 
-Migrations run automatically on `api` container start. To load demo seed data:
-
-```bash
-docker compose -f docker-compose.prod.yml exec api npm run seed
-```
+Migrations run automatically on `api` container start. Create test data via the Postman flows against the running API (see [`postman/README.md`](../postman/README.md)).
 
 ---
 

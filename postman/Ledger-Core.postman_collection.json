@@ -8,7 +8,7 @@
   "item": [
     {
       "name": "Flow - start from scratch",
-      "description": "Run steps 1-11 in order. Test scripts save customerId, obligationId, and VA details.",
+      "description": "Run steps 1-17 in order. Test scripts save customerId, obligationId, and VA details.",
       "item": [
         {
           "name": "1. Health check",
@@ -318,9 +318,107 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/reporting/obligations/{{obligationId}}/payments",
+              "raw": "{{baseUrl}}/reporting/obligations/{{obligationId}}/payments?page=1&limit=20",
               "host": ["{{baseUrl}}"],
-              "path": ["reporting", "obligations", "{{obligationId}}", "payments"]
+              "path": ["reporting", "obligations", "{{obligationId}}", "payments"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "12. Customer balance view",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "customers", "{{customerId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "13. Business aging report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/business/{{businessId}}/aging?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "business", "{{businessId}}", "aging"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "14. Obligation detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/obligations/{{obligationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "obligations", "{{obligationId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "15. Business customer balances",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/business/{{businessId}}/customers?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "business", "{{businessId}}", "customers"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "16. Customer outstanding obligations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/customers/{{customerId}}/obligations?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "customers", "{{customerId}}", "obligations"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "17. Customer ledger history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/customers/{{customerId}}/ledger?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "customers", "{{customerId}}", "ledger"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
             }
           },
           "response": []
@@ -757,14 +855,125 @@
           "response": []
         },
         {
+          "name": "Business metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/business/{{businessId}}/metrics",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "business", "{{businessId}}", "metrics"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Business customer balances",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/business/{{businessId}}/customers?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "business", "{{businessId}}", "customers"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Customer balance view",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "customers", "{{customerId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Customer outstanding obligations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/customers/{{customerId}}/obligations?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "customers", "{{customerId}}", "obligations"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Customer ledger history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/customers/{{customerId}}/ledger?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "customers", "{{customerId}}", "ledger"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obligation detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/obligations/{{obligationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "obligations", "{{obligationId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obligation payment history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/obligations/{{obligationId}}/payments?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "obligations", "{{obligationId}}", "payments"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Business aging report",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/reporting/business/{{businessId}}/aging",
+              "raw": "{{baseUrl}}/reporting/business/{{businessId}}/aging?page=1&limit=20",
               "host": ["{{baseUrl}}"],
-              "path": ["reporting", "business", "{{businessId}}", "aging"]
+              "path": ["reporting", "business", "{{businessId}}", "aging"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
             }
           },
           "response": []

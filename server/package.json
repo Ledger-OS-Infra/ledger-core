@@ -12,7 +12,7 @@
     "db:bootstrap": "ts-node --transpile-only scripts/bootstrap-business.ts",
     "billing:generate-due": "ts-node -r dotenv/config --transpile-only scripts/generate-due-obligations.ts",
     "seed": "knex seed:run --knexfile knexfile.ts",
-    "db:setup": "npm run migrate && npm run seed",
+    "db:setup": "npm run migrate && npm run db:bootstrap",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:nomba-sandbox": "ts-node --transpile-only scripts/test-nomba-sandbox.ts",
