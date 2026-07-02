@@ -134,7 +134,7 @@ export default function ReportsPage() {
                     key={customer.id}
                     className="flex items-center justify-between p-3 rounded border border-border hover:bg-muted/50 transition-colors"
                   >
-                    <p className="text-sm font-medium">{customer.name}</p>
+                    <p className="text-sm font-medium">{customer.full_name}</p>
                     <ButtonCustom variant="ghost" size="sm">
                       <MdDownload className="h-4 w-4" />
                     </ButtonCustom>

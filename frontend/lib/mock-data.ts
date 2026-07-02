@@ -1,15 +1,12 @@
-export interface Customer {
-    id: string
-    name: string
-    email: string
-    virtualAccount: string
-    outstanding: number
-    walletCredit: number
-    lastPayment: Date
-    status: 'current' | 'overdue' | 'credit'
-  }
-  
-  export interface Obligation {
+import type { CustomerWithVirtualAccount } from '@/lib/api/types'
+
+export type Customer = CustomerWithVirtualAccount & {
+  outstanding: number
+  walletCredit: number
+  lastPayment: Date
+}
+
+export interface Obligation {
     id: string
     customerId: string
     type: 'invoice' | 'subscription' | 'custom'
@@ -144,53 +141,123 @@ export interface Customer {
   export const mockCustomers: Customer[] = [
     {
       id: '1',
-      name: 'Acme Corporation',
+      business_id: 'demo-business',
+      full_name: 'Acme Corporation',
       email: 'contact@acme.ng',
-      virtualAccount: '0123456789',
+      phone: null,
+      status: 'ACTIVE',
+      metadata: {},
+      created_at: '2024-06-01T08:00:00.000Z',
+      updated_at: '2024-12-15T12:00:00.000Z',
+      virtual_account: {
+        id: 'va1',
+        customer_id: '1',
+        nomba_account_ref: 'NOMBA-ACME-1',
+        account_number: '0123456789',
+        bank_name: 'Access Bank',
+        bank_code: '044',
+        is_active: true,
+        created_at: '2024-06-01T08:00:00.000Z',
+      },
       outstanding: 250000,
       walletCredit: 50000,
       lastPayment: new Date('2024-12-15'),
-      status: 'current',
     },
     {
       id: '2',
-      name: 'Tech Solutions Ltd',
+      business_id: 'demo-business',
+      full_name: 'Tech Solutions Ltd',
       email: 'billing@techsol.ng',
-      virtualAccount: '9876543210',
+      phone: null,
+      status: 'INACTIVE',
+      metadata: {},
+      created_at: '2024-04-15T09:30:00.000Z',
+      updated_at: '2024-11-28T15:45:00.000Z',
+      virtual_account: {
+        id: 'va2',
+        customer_id: '2',
+        nomba_account_ref: 'NOMBA-TECH-2',
+        account_number: '9876543210',
+        bank_name: 'GTBank',
+        bank_code: '058',
+        is_active: false,
+        created_at: '2024-04-15T09:30:00.000Z',
+      },
       outstanding: 580000,
       walletCredit: 0,
       lastPayment: new Date('2024-11-28'),
-      status: 'overdue',
     },
     {
       id: '3',
-      name: 'Global Imports',
+      business_id: 'demo-business',
+      full_name: 'Global Imports',
       email: 'finance@globalimports.ng',
-      virtualAccount: '5555555555',
+      phone: null,
+      status: 'ACTIVE',
+      metadata: {},
+      created_at: '2024-03-10T11:20:00.000Z',
+      updated_at: '2024-12-20T14:10:00.000Z',
+      virtual_account: {
+        id: 'va3',
+        customer_id: '3',
+        nomba_account_ref: 'NOMBA-GLOB-3',
+        account_number: '5555555555',
+        bank_name: 'Zenith Bank',
+        bank_code: '057',
+        is_active: true,
+        created_at: '2024-03-10T11:20:00.000Z',
+      },
       outstanding: 0,
       walletCredit: 125000,
       lastPayment: new Date('2024-12-20'),
-      status: 'credit',
     },
     {
       id: '4',
-      name: 'Creative Agency Pro',
+      business_id: 'demo-business',
+      full_name: 'Creative Agency Pro',
       email: 'accounts@creativeagency.ng',
-      virtualAccount: '1111111111',
+      phone: null,
+      status: 'ACTIVE',
+      metadata: {},
+      created_at: '2024-05-20T14:00:00.000Z',
+      updated_at: '2024-12-18T10:30:00.000Z',
+      virtual_account: {
+        id: 'va4',
+        customer_id: '4',
+        nomba_account_ref: 'NOMBA-CREA-4',
+        account_number: '1111111111',
+        bank_name: 'First Bank',
+        bank_code: '011',
+        is_active: true,
+        created_at: '2024-05-20T14:00:00.000Z',
+      },
       outstanding: 180000,
       walletCredit: 0,
       lastPayment: new Date('2024-12-18'),
-      status: 'current',
     },
     {
       id: '5',
-      name: 'Supply Chain Hub',
+      business_id: 'demo-business',
+      full_name: 'Supply Chain Hub',
       email: 'logistics@supplychainub.ng',
-      virtualAccount: '2222222222',
+      phone: null,
+      status: 'INACTIVE',
+      metadata: {},
+      created_at: '2024-02-12T08:15:00.000Z',
+      updated_at: '2024-11-10T13:00:00.000Z',
+      virtual_account: {
+        id: 'va5',
+        customer_id: '5',
+        nomba_account_ref: 'NOMBA-SUPP-5',
+        account_number: '2222222222',
+        bank_name: 'UBA',
+        bank_code: '033',
+        is_active: false,
+        created_at: '2024-02-12T08:15:00.000Z',
+      },
       outstanding: 920000,
       walletCredit: 0,
       lastPayment: new Date('2024-11-10'),
-      status: 'overdue',
     },
   ]
   

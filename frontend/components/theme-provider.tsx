@@ -17,33 +17,36 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = window.localStorage.getItem('theme')
-    const preferredTheme = stored === 'light' || stored === 'dark'
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    const initialTheme: Theme = stored === 'light' || stored === 'dark'
       ? stored
-      : window.matchMedia('(prefers-color-scheme: dark)').matches
+      : systemPrefersDark
         ? 'dark'
         : 'light'
 
-    window.requestAnimationFrame(() => {
-      setTheme(preferredTheme)
-      setMounted(true)
-    })
+    const root = document.documentElement
+    root.classList.toggle('dark', initialTheme === 'dark')
+
+    setTheme(initialTheme)
+    setMounted(true)
   }, [])
 
   useEffect(() => {
     if (!mounted) return
 
     const root = document.documentElement
-    if (theme === 'dark') {
-      root.classList.add('dark')
-    } else {
-      root.classList.remove('dark')
-    }
-
+    root.classList.toggle('dark', theme === 'dark')
     window.localStorage.setItem('theme', theme)
   }, [mounted, theme])
 
   const toggleTheme = () => {
-    setTheme((currentTheme) => (currentTheme === 'light' ? 'dark' : 'light'))
+    setTheme((currentTheme) => {
+      const nextTheme = currentTheme === 'light' ? 'dark' : 'light'
+      const root = document.documentElement
+      root.classList.toggle('dark', nextTheme === 'dark')
+      window.localStorage.setItem('theme', nextTheme)
+      return nextTheme
+    })
   }
 
   return (

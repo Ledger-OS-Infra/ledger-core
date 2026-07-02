@@ -1,82 +1,113 @@
-'use client'
+"use client";
 
-import { useQuery } from '@tanstack/react-query'
-import { PageHeader } from '@/components/page-header'
-import { Card, CardContent } from '@/components/ui/card'
-import { StatBlock } from '@/components/stat-block'
-import { Badge } from '@/components/ui/badge'
-import { reportingClient } from '@/lib/api'
-import { formatCurrency, formatCurrencyShort } from '@/lib/currency'
-import { mockCustomers, mockObligations, mockTransactions } from '@/lib/mock-data'
-import { calculateAgingBuckets } from '@/lib/obligations'
-import { MdWarning } from 'react-icons/md'
+import { useQuery } from "@tanstack/react-query";
+import { PageHeader } from "@/components/page-header";
+import { Card, CardContent } from "@/components/ui/card";
+import { StatBlock } from "@/components/stat-block";
+import { Badge } from "@/components/ui/badge";
+import { reportingClient } from "@/lib/api";
+import { formatCurrency, formatCurrencyShort } from "@/lib/currency";
+import {
+  mockCustomers,
+  mockObligations,
+  mockTransactions,
+} from "@/lib/mock-data";
+import { calculateAgingBuckets } from "@/lib/obligations";
+import { MdWarning } from "react-icons/md";
 
-const BUSINESS_ID = 'demo-business'
+const BUSINESS_ID = "demo-business";
 
 export default function DashboardPage() {
-  const { data: dashboardData, isPending, isError } = useQuery({
-    queryKey: ['dashboard', BUSINESS_ID],
+  const {
+    data: dashboardData,
+    isPending,
+    isError,
+  } = useQuery({
+    queryKey: ["dashboard", BUSINESS_ID],
     queryFn: async () => {
       try {
         const [metrics, aging] = await Promise.all([
           reportingClient.getBusinessMetrics(BUSINESS_ID),
           reportingClient.listAging(BUSINESS_ID),
-        ])
+        ]);
 
         return {
           metrics,
           agingSummary: aging.summary,
-        }
+        };
       } catch {
         // Fallback: derive metrics from mock data when the API is unavailable
         return {
           metrics: {
-            totalOutstanding: mockCustomers.reduce((sum, c) => sum + c.outstanding, 0),
+            totalOutstanding: mockCustomers.reduce(
+              (sum, customer) => sum + customer.outstanding,
+              0,
+            ),
             overdueAmount: mockCustomers
-              .filter((c) => c.status === 'overdue')
-              .reduce((sum, c) => sum + c.outstanding, 0),
-            overdueObligationCount: mockCustomers.filter((c) => c.status === 'overdue').length,
+              .filter((customer) => customer.status === "INACTIVE")
+              .reduce((sum, customer) => sum + customer.outstanding, 0),
+            overdueObligationCount: mockCustomers.filter(
+              (customer) => customer.status === "INACTIVE",
+            ).length,
             totalInflow: 0,
-            totalWalletCredit: mockCustomers.reduce((sum, c) => sum + c.walletCredit, 0),
+            totalWalletCredit: mockCustomers.reduce(
+              (sum, customer) => sum + customer.walletCredit,
+              0,
+            ),
           },
-          agingSummary: { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 },
-        }
+          agingSummary: { "0-30": 0, "31-60": 0, "61-90": 0, "90+": 0 },
+        };
       }
     },
     staleTime: 60_000,
-  })
+  });
 
   // Fallback mirrors the shape above when data hasn't loaded yet
   const dashboardMetrics = dashboardData?.metrics ?? {
-    totalOutstanding: mockCustomers.reduce((sum, c) => sum + c.outstanding, 0),
+    totalOutstanding: mockCustomers.reduce(
+      (sum, customer) => sum + customer.outstanding,
+      0,
+    ),
     overdueAmount: mockCustomers
-      .filter((c) => c.status === 'overdue')
-      .reduce((sum, c) => sum + c.outstanding, 0),
-    overdueObligationCount: mockCustomers.filter((c) => c.status === 'overdue').length,
+      .filter((customer) => customer.status === "INACTIVE")
+      .reduce((sum, customer) => sum + customer.outstanding, 0),
+    overdueObligationCount: mockCustomers.filter(
+      (customer) => customer.status === "INACTIVE",
+    ).length,
     totalInflow: 0,
-    totalWalletCredit: mockCustomers.reduce((sum, c) => sum + c.walletCredit, 0),
-  }
+    totalWalletCredit: mockCustomers.reduce(
+      (sum, customer) => sum + customer.walletCredit,
+      0,
+    ),
+  };
 
   // Calculate metrics
-  const thisMonth = new Date()
-  const thisMonthStart = new Date(thisMonth.getFullYear(), thisMonth.getMonth(), 1)
+  const thisMonth = new Date();
+  const thisMonthStart = new Date(
+    thisMonth.getFullYear(),
+    thisMonth.getMonth(),
+    1,
+  );
 
   const inflowThisMonth = mockTransactions
-    .filter((t) => t.date >= thisMonthStart)
-    .reduce((sum, t) => sum + t.amount, 0)
+  .filter((transaction) => transaction.date >= thisMonthStart)
+  .reduce((sum, transaction) => sum + transaction.amount, 0)
 
-  const totalOutstanding = dashboardMetrics.totalOutstanding
-  const totalOverdue = dashboardMetrics.overdueAmount
-  // The API doesn't return a total customer count; use mock length as a stand-in
-  const activeCustomers = mockCustomers.length
-  const unmatchedTransactions = mockTransactions.filter((t) => t.status === 'unmatched')
+  const totalOutstanding = dashboardMetrics.totalOutstanding;
+  const totalOverdue = dashboardMetrics.overdueAmount;
+  // The API doesn't return a total customer count; use active mock customers as a stand-in
+  const activeCustomers = mockCustomers.filter(
+    (customer) => customer.status === 'ACTIVE'
+  ).length
+  const unmatchedTransactions = mockTransactions.filter(
+    (transaction) => transaction.status === 'unmatched'
+  )
 
   // Aging buckets — computed via shared utility
-  const agingBuckets = calculateAgingBuckets(mockObligations)
-  const maxAging = Math.max(...Object.values(agingBuckets))
+  const agingBuckets = calculateAgingBuckets(mockObligations);
+  const maxAging = Math.max(...Object.values(agingBuckets));
 
-  const recentTransactions = mockTransactions.slice(0, 5)
-
+  const recentTransactions = mockTransactions.slice(0, 5);
 
   return (
     <div>
@@ -88,10 +119,14 @@ export default function DashboardPage() {
       {/* Metrics Grid */}
       <div className="px-8 py-6">
         {isPending && (
-          <div className="mb-4 text-sm text-muted-foreground">Loading live dashboard data…</div>
+          <div className="mb-4 text-sm text-muted-foreground">
+            Loading live dashboard data…
+          </div>
         )}
         {isError && (
-          <div className="mb-4 text-sm text-muted-foreground">Using fallback data while the API is unavailable.</div>
+          <div className="mb-4 text-sm text-muted-foreground">
+            Using fallback data while the API is unavailable.
+          </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatBlock
@@ -105,12 +140,13 @@ export default function DashboardPage() {
           <StatBlock
             label="Overdue"
             value={formatCurrencyShort(totalOverdue)}
-            description={unmatchedTransactions.length > 0 ? `${unmatchedTransactions.length} unmatched` : 'All matched'}
+            description={
+              unmatchedTransactions.length > 0
+                ? `${unmatchedTransactions.length} unmatched`
+                : "All matched"
+            }
           />
-          <StatBlock
-            label="Active Customers"
-            value={activeCustomers}
-          />
+          <StatBlock label="Active Customers" value={activeCustomers} />
         </div>
 
         {/* Warning Banner */}
@@ -123,7 +159,8 @@ export default function DashboardPage() {
                   {unmatchedTransactions.length} unmatched transactions
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Please review and assign these transactions to reconcile your accounts.
+                  Please review and assign these transactions to reconcile your
+                  accounts.
                 </p>
               </div>
             </div>
@@ -147,15 +184,15 @@ export default function DashboardPage() {
                   ) : (
                     recentTransactions.map((transaction) => {
                       const customer = mockCustomers.find(
-                        (c) => c.id === transaction.customerId
+                        (customer) => customer.id === transaction.customerId
                       )
 
                       const statusVariant =
-                        transaction.status === 'matched'
-                          ? 'success'
-                          : transaction.status === 'unmatched'
-                            ? 'danger'
-                            : 'warning'
+                        transaction.status === "matched"
+                          ? "success"
+                          : transaction.status === "unmatched"
+                            ? "danger"
+                            : "warning";
 
                       return (
                         <div
@@ -164,7 +201,7 @@ export default function DashboardPage() {
                         >
                           <div className="flex-1">
                             <p className="font-medium text-sm">
-                              {customer?.name}
+                              {customer?.full_name ?? "Unknown customer"}
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">
                               {transaction.reasoning}
@@ -174,12 +211,16 @@ export default function DashboardPage() {
                             <p className="font-medium font-mono text-sm">
                               {formatCurrency(transaction.amount)}
                             </p>
-                            <Badge variant={statusVariant} size="sm" className="mt-1">
+                            <Badge
+                              variant={statusVariant}
+                              size="sm"
+                              className="mt-1"
+                            >
                               {transaction.status}
                             </Badge>
                           </div>
                         </div>
-                      )
+                      );
                     })
                   )}
                 </div>
@@ -197,14 +238,15 @@ export default function DashboardPage() {
                 <div className="space-y-4 px-6 py-4">
                   {(
                     [
-                      { label: '0-30 days', key: '0-30' },
-                      { label: '31-60 days', key: '31-60' },
-                      { label: '61-90 days', key: '61-90' },
-                      { label: '90+ days', key: '90+' },
+                      { label: "0-30 days", key: "0-30" },
+                      { label: "31-60 days", key: "31-60" },
+                      { label: "61-90 days", key: "61-90" },
+                      { label: "90+ days", key: "90+" },
                     ] as const
                   ).map(({ label, key }) => {
-                    const amount = agingBuckets[key]
-                    const percentage = maxAging > 0 ? (amount / maxAging) * 100 : 0
+                    const amount = agingBuckets[key];
+                    const percentage =
+                      maxAging > 0 ? (amount / maxAging) * 100 : 0;
 
                     return (
                       <div key={key}>
@@ -217,19 +259,19 @@ export default function DashboardPage() {
                         <div className="h-2 bg-muted rounded overflow-hidden">
                           <div
                             className={`h-full transition-all ${
-                              key === '0-30'
-                                ? 'bg-green-500'
-                                : key === '31-60'
-                                  ? 'bg-yellow-500'
-                                  : key === '61-90'
-                                    ? 'bg-orange-500'
-                                    : 'bg-red-500'
+                              key === "0-30"
+                                ? "bg-green-500"
+                                : key === "31-60"
+                                  ? "bg-yellow-500"
+                                  : key === "61-90"
+                                    ? "bg-orange-500"
+                                    : "bg-red-500"
                             }`}
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
                       </div>
-                    )
+                    );
                   })}
                 </div>
               </CardContent>
@@ -238,5 +280,5 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

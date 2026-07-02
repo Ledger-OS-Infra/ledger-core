@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -42,6 +43,12 @@ export function Sidebar() {
   const { theme, toggleTheme } = useTheme()
 
   const toggleExpanded = () => setIsExpanded(!isExpanded)
+  const resolvedTheme = theme ?? 'light'
+  const logoSrc = resolvedTheme === 'dark'
+    ? '/ledger_core_L_white_text_64.png'
+    : '/ledger_core_L_dark_text_64.png'
+
+  
 
   return (
     <SidebarContext.Provider value={{ isExpanded, toggleExpanded }}>
@@ -53,15 +60,29 @@ export function Sidebar() {
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-sidebar-border px-4 py-4">
-          {isExpanded && (
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
-                L
-              </div>
-              <div className="flex items-center gap-2">
+          {isExpanded ? (
+            <div className="flex items-center gap-3">
+              <Image
+                src={logoSrc}
+                alt="Ledger Core logo"
+                width={32}
+                height={32}
+                className="h-8 w-8 object-contain"
+              />
+              <div className="flex items-center self-end gap-2">
                 <span className="text-sm font-semibold">Ledger</span>
                 <div className="sidebar-logo-dot" />
               </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center">
+              <Image
+                src={logoSrc}
+                alt="Ledger Core logo"
+                width={32}
+                height={32}
+                className="h-8 w-8 object-contain"
+              />
             </div>
           )}
           <button
@@ -109,15 +130,15 @@ export function Sidebar() {
           <button
             onClick={toggleTheme}
             className="w-full flex items-center gap-3 rounded px-3 py-2 text-sm hover:bg-sidebar-accent transition-colors"
-            title={isExpanded ? undefined : theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            title={isExpanded ? undefined : resolvedTheme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
           >
-            {theme === 'light' ? (
+            {resolvedTheme === 'light' ? (
               <MdDarkMode className="h-5 w-5 flex-shrink-0" />
             ) : (
               <MdLightMode className="h-5 w-5 flex-shrink-0" />
             )}
             {isExpanded && (
-              <span className="capitalize">{theme === 'dark' ? 'dark' : 'light'}</span>
+              <span className="capitalize">{resolvedTheme === 'dark' ? 'dark' : 'light'}</span>
             )}
           </button>
         </div>
