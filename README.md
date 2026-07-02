@@ -203,6 +203,7 @@ See [CONTRIBUTION_GUIDE.md](CONTRIBUTION_GUIDE.md) for branch naming, commit con
 | [docs/SCHEMA.md](docs/SCHEMA.md) | Database schema, ER diagram, indexes, append-only policy |
 | [docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md) | Local Docker and Aiven setup, TablePlus guide |
 | [docs/REPORTING_VIEWS.md](docs/REPORTING_VIEWS.md) | Reporting views, example queries, API endpoints |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Run the full stack in Docker for the hackathon demo |
 
 ---
 

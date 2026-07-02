@@ -1,0 +1,251 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-geist-sans), 'Geist Fallback';
+  --font-mono: var(--font-geist-mono), 'Geist Mono Fallback';
+  --color-gold: var(--gold);
+  --color-gold-muted: var(--gold-muted);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root,
+:root:not(.dark) {
+  color-scheme: light;
+  --background: #fafaf9;
+  --foreground: #1a1a18;
+  --card: #ffffff;
+  --card-foreground: #1a1a18;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a18;
+  --primary: #2f4858;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f5f4;
+  --secondary-foreground: #2f4858;
+  --muted: #e7e5e4;
+  --muted-foreground: #78716b;
+  --accent: #2f4858;
+  --accent-foreground: #ffffff;
+  --destructive: #b42318;
+  --border: #e7e5e4;
+  --input: #e7e5e4;
+  --ring: #2f4858;
+  --chart-1: #2f4858;
+  --chart-2: #78716b;
+  --chart-3: #d6d3d1;
+  --chart-4: #f5f5f4;
+  --chart-5: #fafaf9;
+  --success: #16a34a;
+  --warning: #ca8a04;
+  --gold: #FFCC00;
+  --gold-muted: #E0B400;
+  --radius: 0.375rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1a1a18;
+  --sidebar-primary: #2f4858;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f5f5f4;
+  --sidebar-accent-foreground: #2f4858;
+  --sidebar-border: #e7e5e4;
+  --sidebar-ring: #2f4858;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #151513;
+  --foreground: #edede9;
+  --card: #1e1e1c;
+  --card-foreground: #edede9;
+  --popover: #1e1e1c;
+  --popover-foreground: #edede9;
+  --primary: #7fa7bd;
+  --primary-foreground: #151513;
+  --secondary: #292724;
+  --secondary-foreground: #edede9;
+  --muted: #3f3f3d;
+  --muted-foreground: #a8a5a0;
+  --accent: #7fa7bd;
+  --accent-foreground: #151513;
+  --destructive: #f87171;
+  --border: #292724;
+  --input: #3f3f3d;
+  --ring: #7fa7bd;
+  --chart-1: #7fa7bd;
+  --chart-2: #a8a5a0;
+  --chart-3: #3f3f3d;
+  --chart-4: #292724;
+  --chart-5: #1e1e1c;
+  --success: #22c55e;
+  --warning: #eab308;
+  --gold: #FFD23D;
+  --gold-muted: #E0B400;
+  --sidebar: #1e1e1c;
+  --sidebar-foreground: #edede9;
+  --sidebar-primary: #7fa7bd;
+  --sidebar-primary-foreground: #151513;
+  --sidebar-accent: #292724;
+  --sidebar-accent-foreground: #edede9;
+  --sidebar-border: #3A3935;
+  --sidebar-ring: #7fa7bd;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    color-scheme: dark;
+    --background: #151513;
+    --foreground: #edede9;
+    --card: #1e1e1c;
+    --card-foreground: #edede9;
+    --popover: #1e1e1c;
+    --popover-foreground: #edede9;
+    --primary: #7fa7bd;
+    --primary-foreground: #151513;
+    --secondary: #292724;
+    --secondary-foreground: #edede9;
+    --muted: #3f3f3d;
+    --muted-foreground: #a8a5a0;
+    --accent: #7fa7bd;
+    --accent-foreground: #151513;
+    --destructive: #f87171;
+    --border: #292724;
+    --input: #3f3f3d;
+    --ring: #7fa7bd;
+    --chart-1: #7fa7bd;
+    --chart-2: #a8a5a0;
+    --chart-3: #3f3f3d;
+    --chart-4: #292724;
+    --chart-5: #1e1e1c;
+    --success: #22c55e;
+    --warning: #eab308;
+    --gold: #FFD23D;
+    --gold-muted: #E0B400;
+    --sidebar: #1e1e1c;
+    --sidebar-foreground: #edede9;
+    --sidebar-primary: #7fa7bd;
+    --sidebar-primary-foreground: #151513;
+    --sidebar-accent: #292724;
+    --sidebar-accent-foreground: #edede9;
+    --sidebar-border: #3A3935;
+    --sidebar-ring: #7fa7bd;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  
+  /* Ensure light mode text is visible */
+  button, a, input, textarea, select {
+    color: inherit;
+  }
+  
+  /* Light mode text colors */
+  :not(.dark) button,
+  :not(.dark) a,
+  :not(.dark) p,
+  :not(.dark) span,
+  :not(.dark) h1,
+  :not(.dark) h2,
+  :not(.dark) h3,
+  :not(.dark) h4,
+  :not(.dark) h5,
+  :not(.dark) h6 {
+    color: var(--foreground);
+  }
+}
+
+/* Ensure light mode is explicitly set */
+:root:not(.dark) {
+  color: var(--foreground);
+}
+
+/* Sidebar nav item hover underline */
+.sidebar-nav-item {
+  position: relative;
+}
+
+.sidebar-nav-item::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 10px;
+  right: 10px;
+  height: 2px;
+  background-color: var(--gold);
+  border-radius: 1px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 220ms ease;
+}
+
+.sidebar-nav-item:not(.sidebar-nav-item-active):hover::after {
+  transform: scaleX(1);
+}
+
+.sidebar-nav-item-active::after {
+  background-color: var(--gold-muted);
+  transform: scaleX(1);
+}
+
+/* Sidebar nav item collapsed state */
+.sidebar-nav-item-collapsed::after {
+  left: 8px;
+  right: 8px;
+}
+
+/* Logo gold dot */
+.sidebar-logo-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--gold);
+}

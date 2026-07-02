@@ -1,0 +1,9 @@
+node_modules
+dist
+.env
+.env.*
+*.log
+.git
+nomba/__tests__
+scripts
+vitest.config.ts
