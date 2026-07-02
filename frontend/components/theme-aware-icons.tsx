@@ -7,23 +7,32 @@ export function ThemeAwareIcons() {
   const { theme } = useTheme()
 
   useEffect(() => {
-    const iconHref = theme === 'dark'
-      ? '/ledger_core_L_white_64.png'
-      : '/ledger_core_L_dark_text_64.png'
-    const appleHref = theme === 'dark'
-      ? '/ledger_core_L_white_256.png'
-      : '/ledger_core_L_dark_text_256.png'
+    const iconHref =
+      theme === 'dark'
+        ? '/ledger_core_L_white_64.png'
+        : '/ledger_core_L_dark_text_64.png'
+
+    const appleHref =
+      theme === 'dark'
+        ? '/ledger_core_L_white_256.png'
+        : '/ledger_core_L_dark_text_256.png'
 
     const setIconLink = (rel: string, href: string) => {
-      let link = document.querySelector(`link[rel="${rel}"]`) as HTMLLinkElement | null
+      const links = document.querySelectorAll<HTMLLinkElement>(
+        `link[rel="${rel}"]`
+      )
 
-      if (!link) {
-        link = document.createElement('link')
+      if (links.length === 0) {
+        const link = document.createElement('link')
         link.rel = rel
+        link.href = href
         document.head.appendChild(link)
+        return
       }
 
-      link.href = href
+      links.forEach((link) => {
+        link.href = href
+      })
     }
 
     setIconLink('icon', iconHref)
