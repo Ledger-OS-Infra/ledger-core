@@ -21,12 +21,6 @@ describe("deriveStatus", () => {
 });
 
 describe("allocatePayment", () => {
-  function makeMockClient() {
-    return {
-      query: vi.fn().mockResolvedValue({ rows: [{ id: "ledger-entry-1" }] }),
-    };
-  }
-
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -48,13 +42,19 @@ describe("allocatePayment", () => {
       strategy: "exact" as const,
     };
 
-    const client = makeMockClient();
+    const client = {
+      query: vi.fn()
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [{ id: "ledger-entry-1" }] }),
+    };
+
     const result = await allocatePayment(match, "evt-1", client as any);
 
     expect(result.newStatus).toBe("PAID");
     expect(result.amountApplied).toBe(10000);
     expect(result.excessCreditedToWallet).toBe(0);
     expect(result.ledgerEntryId).toBe("ledger-entry-1");
+    expect(result.walletLedgerEntryId).toBeNull();
     expect(client.query).toHaveBeenCalledTimes(2);
   });
 
@@ -74,12 +74,18 @@ describe("allocatePayment", () => {
       strategy: "fifo" as const,
     };
 
-    const client = makeMockClient();
+    const client = {
+      query: vi.fn()
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [{ id: "ledger-entry-1" }] }),
+    };
+
     const result = await allocatePayment(match, "evt-1", client as any);
 
     expect(result.newStatus).toBe("PARTIAL");
     expect(result.amountApplied).toBe(4000);
     expect(result.excessCreditedToWallet).toBe(0);
+    expect(result.walletLedgerEntryId).toBeNull();
     expect(client.query).toHaveBeenCalledTimes(2);
   });
 
@@ -99,16 +105,25 @@ describe("allocatePayment", () => {
       strategy: "fifo" as const,
     };
 
-    const client = makeMockClient();
+    const client = {
+      query: vi.fn()
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [{ id: "ledger-entry-1" }] })
+        .mockResolvedValueOnce({ rows: [{ balance: "5000" }] })
+        .mockResolvedValueOnce({ rows: [{ id: "wallet-ledger-1" }] }),
+    };
+
     const result = await allocatePayment(match, "evt-1", client as any);
 
     expect(result.newStatus).toBe("PAID");
     expect(result.amountApplied).toBe(10000);
     expect(result.excessCreditedToWallet).toBe(5000);
-    expect(client.query).toHaveBeenCalledTimes(3);
+    expect(result.ledgerEntryId).toBe("ledger-entry-1");
+    expect(result.walletLedgerEntryId).toBe("wallet-ledger-1");
+    expect(client.query).toHaveBeenCalledTimes(4);
   });
 
-  it("partial payment on obligation with existing partial amount paid", async () => {
+  it("John Doe scenario: second payment clears obligation and credits wallet", async () => {
     const obligation = makeObligation({
       id: "ob-1",
       customer_id: "cus-1",
@@ -124,12 +139,20 @@ describe("allocatePayment", () => {
       strategy: "fifo" as const,
     };
 
-    const client = makeMockClient();
+    const client = {
+      query: vi.fn()
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [{ id: "ledger-entry-2" }] })
+        .mockResolvedValueOnce({ rows: [{ balance: "20000" }] })
+        .mockResolvedValueOnce({ rows: [{ id: "wallet-ledger-2" }] }),
+    };
+
     const result = await allocatePayment(match, "evt-2", client as any);
 
     expect(result.newStatus).toBe("PAID");
     expect(result.amountApplied).toBe(80000);
     expect(result.excessCreditedToWallet).toBe(20000);
-    expect(client.query).toHaveBeenCalledTimes(3);
+    expect(result.walletLedgerEntryId).toBe("wallet-ledger-2");
+    expect(client.query).toHaveBeenCalledTimes(4);
   });
 });
