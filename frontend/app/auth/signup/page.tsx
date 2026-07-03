@@ -1,96 +1,89 @@
+// frontend/app/auth/signup/page.tsx
 'use client'
 
 import { useState } from 'react'
 import { AuthLayout } from '@/components/auth-layout'
 import { FormInput } from '@/components/ui/form-input'
+import { PasswordInput } from '@/components/ui/password-input'
+import { PasswordStrengthMeter } from '@/components/ui/password-strength-meter'
 import { FormError } from '@/components/ui/form-error'
 import { ButtonCustom } from '@/components/ui/button-custom'
-import Link from 'next/link'
+import { AuthFooterLink } from '@/components/ui/auth-footer-link'
+import { AuthSuccessState } from '@/components/ui/auth-success-state'
+import { useFormValidation, FormErrors } from '@/hooks/use-form-validation'
 import { useRouter } from 'next/navigation'
 
-interface FormErrors {
-  name?: string
-  email?: string
-  password?: string
-  confirmPassword?: string
-  general?: string
+interface SignupFormValues {
+  name: string
+  email: string
+  password: string
+  confirmPassword: string
+}
+
+function validateSignupForm(values: SignupFormValues): FormErrors<SignupFormValues> {
+  const newErrors: FormErrors<SignupFormValues> = {}
+
+  if (!values.name.trim()) {
+    newErrors.name = 'Business name is required'
+  }
+
+  if (!values.email.trim()) {
+    newErrors.email = 'Email is required'
+    return newErrors
+  }
+  if (!values.email.includes('@')) {
+    newErrors.email = 'Please enter a valid email'
+  }
+
+  if (!values.password) {
+    newErrors.password = 'Password is required'
+    return newErrors
+  }
+  if (values.password.length < 8) {
+    newErrors.password = 'Password must be at least 8 characters'
+  }
+
+  if (values.password !== values.confirmPassword) {
+    newErrors.confirmPassword = 'Passwords do not match'
+  }
+
+  return newErrors
 }
 
 export default function SignupPage() {
   const router = useRouter()
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  })
-  const [errors, setErrors] = useState<FormErrors>({})
-  const [isLoading, setIsLoading] = useState(false)
+  const {
+    values: formData,
+    errors,
+    isLoading,
+    setIsLoading,
+    handleChange,
+    validateForm,
+    hasErrors,
+  } = useFormValidation<SignupFormValues>(
+    { name: '', email: '', password: '', confirmPassword: '' },
+    validateSignupForm
+  )
   const [isSuccess, setIsSuccess] = useState(false)
-
-  const validateForm = () => {
-    const newErrors: FormErrors = {}
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Business name is required'
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required'
-    } else if (!formData.email.includes('@')) {
-      newErrors.email = 'Please enter a valid email'
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password is required'
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters'
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match'
-    }
-
-    return newErrors
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    const newErrors = validateForm()
-    setErrors(newErrors)
 
-    if (Object.keys(newErrors).length > 0) {
-      return
-    }
+    const newErrors = validateForm()
+    if (hasErrors(newErrors)) return
 
     setIsLoading(true)
-    
+
     // Simulate API call
     setTimeout(() => {
       setIsSuccess(true)
       setIsLoading(false)
-      
+
       // Redirect after 2 seconds
       setTimeout(() => {
         router.push('/dashboard')
       }, 2000)
     }, 1500)
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-    // Clear error for this field when user starts typing
-    if (errors[name as keyof FormErrors]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: undefined,
-      }))
-    }
   }
 
   if (isSuccess) {
@@ -99,14 +92,7 @@ export default function SignupPage() {
         title="Account Created"
         description="Welcome to Ledger-Core. Redirecting to dashboard..."
       >
-        <div className="text-center py-4">
-          <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-3">
-            <span className="text-green-600 dark:text-green-400 text-xl">✓</span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Your account has been created successfully.
-          </p>
-        </div>
+        <AuthSuccessState message="Your account has been created successfully." />
       </AuthLayout>
     )
   }
@@ -141,26 +127,29 @@ export default function SignupPage() {
           disabled={isLoading}
         />
 
-        <FormInput
-          label="Password"
-          name="password"
-          type="password"
-          placeholder="••••••••"
-          value={formData.password}
-          onChange={handleChange}
-          error={errors.password}
-          disabled={isLoading}
-        />
+        <div className="space-y-2">
+          <PasswordInput
+            label="Password"
+            name="password"
+            placeholder="••••••••"
+            value={formData.password}
+            onChange={handleChange}
+            error={errors.password}
+            disabled={isLoading}
+            disableClipboard
+          />
+          <PasswordStrengthMeter password={formData.password} />
+        </div>
 
-        <FormInput
+        <PasswordInput
           label="Confirm Password"
           name="confirmPassword"
-          type="password"
           placeholder="••••••••"
           value={formData.confirmPassword}
           onChange={handleChange}
           error={errors.confirmPassword}
           disabled={isLoading}
+          disableClipboard
         />
 
         <ButtonCustom
@@ -172,14 +161,7 @@ export default function SignupPage() {
         </ButtonCustom>
       </form>
 
-      <div className="pt-4 border-t border-border">
-        <p className="text-sm text-muted-foreground text-center">
-          Already have an account?{' '}
-          <Link href="/auth/login" className="text-primary hover:underline font-medium">
-            Sign in
-          </Link>
-        </p>
-      </div>
+      <AuthFooterLink variant="signup" />
     </AuthLayout>
   )
 }

@@ -1,58 +1,60 @@
+// frontend/app/auth/forgot-password/page.tsx
 'use client'
 
 import { useState } from 'react'
 import { AuthLayout } from '@/components/auth-layout'
 import { FormInput } from '@/components/ui/form-input'
 import { ButtonCustom } from '@/components/ui/button-custom'
+import { FadeIn } from '@/components/ui/fade-in'
+import { useFormValidation, FormErrors } from '@/hooks/use-form-validation'
 import Link from 'next/link'
 
-interface FormErrors {
-  email?: string
+interface ForgotPasswordFormValues {
+  email: string
+}
+
+function validateForgotPasswordForm(
+  values: ForgotPasswordFormValues
+): FormErrors<ForgotPasswordFormValues> {
+  const newErrors: FormErrors<ForgotPasswordFormValues> = {}
+
+  if (!values.email.trim()) {
+    newErrors.email = 'Email is required'
+    return newErrors
+  }
+  if (!values.email.includes('@')) {
+    newErrors.email = 'Please enter a valid email'
+  }
+
+  return newErrors
 }
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('')
-  const [errors, setErrors] = useState<FormErrors>({})
-  const [isLoading, setIsLoading] = useState(false)
+  const {
+    values: formData,
+    errors,
+    isLoading,
+    setIsLoading,
+    handleChange,
+    validateForm,
+    hasErrors,
+    reset,
+  } = useFormValidation<ForgotPasswordFormValues>({ email: '' }, validateForgotPasswordForm)
   const [isSubmitted, setIsSubmitted] = useState(false)
-
-  const validateForm = () => {
-    const newErrors: FormErrors = {}
-
-    if (!email.trim()) {
-      newErrors.email = 'Email is required'
-    } else if (!email.includes('@')) {
-      newErrors.email = 'Please enter a valid email'
-    }
-
-    return newErrors
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    const newErrors = validateForm()
-    setErrors(newErrors)
 
-    if (Object.keys(newErrors).length > 0) {
-      return
-    }
+    const newErrors = validateForm()
+    if (hasErrors(newErrors)) return
 
     setIsLoading(true)
-    
+
     // Simulate API call
     setTimeout(() => {
       setIsSubmitted(true)
       setIsLoading(false)
     }, 1500)
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value)
-    // Clear error when user starts typing
-    if (errors.email) {
-      setErrors({})
-    }
   }
 
   if (isSubmitted) {
@@ -61,16 +63,16 @@ export default function ForgotPasswordPage() {
         title="Check Your Email"
         description="We've sent password reset instructions"
       >
-        <div className="space-y-6">
+        <FadeIn className="space-y-6">
           <div className="bg-secondary/30 border border-border rounded-sm p-4 text-center">
             <p className="text-sm text-foreground">
               We&apos;ve sent a password reset link to:
             </p>
             <p className="font-mono text-sm text-primary font-medium mt-2">
-              {email}
+              {formData.email}
             </p>
             <p className="text-xs text-muted-foreground mt-3">
-              The link will expire in 24 hours.
+              The link will expire in 10 minutes.
             </p>
           </div>
 
@@ -80,7 +82,7 @@ export default function ForgotPasswordPage() {
               <button
                 onClick={() => {
                   setIsSubmitted(false)
-                  setEmail('')
+                  reset()
                 }}
                 className="text-primary hover:underline font-medium"
               >
@@ -89,7 +91,7 @@ export default function ForgotPasswordPage() {
               .
             </p>
           </div>
-        </div>
+        </FadeIn>
 
         <div className="pt-4 border-t border-border">
           <p className="text-sm text-muted-foreground text-center">
@@ -111,9 +113,10 @@ export default function ForgotPasswordPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormInput
           label="Email Address"
+          name="email"
           type="email"
           placeholder="you@company.com"
-          value={email}
+          value={formData.email}
           onChange={handleChange}
           error={errors.email}
           disabled={isLoading}

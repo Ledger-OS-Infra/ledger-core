@@ -1,81 +1,71 @@
+// frontend/app/auth/login/page.tsx
 'use client'
 
-import { useState } from 'react'
 import { AuthLayout } from '@/components/auth-layout'
 import { FormInput } from '@/components/ui/form-input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { FormError } from '@/components/ui/form-error'
 import { ButtonCustom } from '@/components/ui/button-custom'
+import { AuthFooterLink } from '@/components/ui/auth-footer-link'
+import { useFormValidation, FormErrors } from '@/hooks/use-form-validation'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-interface FormErrors {
-  email?: string
-  password?: string
-  general?: string
+interface LoginFormValues {
+  email: string
+  password: string
+}
+
+function validateLoginForm(values: LoginFormValues): FormErrors<LoginFormValues> {
+  const newErrors: FormErrors<LoginFormValues> = {}
+
+  if (!values.email.trim()) {
+    newErrors.email = 'Email is required'
+    return newErrors
+  }
+  if (!values.email.includes('@')) {
+    newErrors.email = 'Please enter a valid email'
+  }
+
+  if (!values.password) {
+    newErrors.password = 'Password is required'
+  }
+
+  return newErrors
 }
 
 export default function LoginPage() {
   const router = useRouter()
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  })
-  const [errors, setErrors] = useState<FormErrors>({})
-  const [isLoading, setIsLoading] = useState(false)
-
-  const validateForm = () => {
-    const newErrors: FormErrors = {}
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required'
-    } else if (!formData.email.includes('@')) {
-      newErrors.email = 'Please enter a valid email'
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password is required'
-    }
-
-    return newErrors
-  }
+  const {
+    values: formData,
+    errors,
+    isLoading,
+    setIsLoading,
+    handleChange,
+    validateForm,
+    hasErrors,
+    setGeneralError,
+  } = useFormValidation<LoginFormValues>({ email: '', password: '' }, validateLoginForm)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    const newErrors = validateForm()
-    setErrors(newErrors)
 
-    if (Object.keys(newErrors).length > 0) {
-      return
-    }
+    const newErrors = validateForm()
+    if (hasErrors(newErrors)) return
 
     setIsLoading(true)
-    
+
     // Simulate API call
     setTimeout(() => {
       // Mock authentication - in real app, validate credentials
       if (formData.email && formData.password) {
         router.push('/dashboard')
-      } else {
-        setErrors({ general: 'Invalid credentials' })
-        setIsLoading(false)
+        return
       }
-    }, 1500)
-  }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-    // Clear error for this field when user starts typing
-    if (errors[name as keyof FormErrors]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: undefined,
-      }))
-    }
+      setGeneralError('Invalid credentials')
+      setIsLoading(false)
+    }, 1500)
   }
 
   return (
@@ -97,10 +87,9 @@ export default function LoginPage() {
           disabled={isLoading}
         />
 
-        <FormInput
+        <PasswordInput
           label="Password"
           name="password"
-          type="password"
           placeholder="••••••••"
           value={formData.password}
           onChange={handleChange}
@@ -126,14 +115,7 @@ export default function LoginPage() {
         </ButtonCustom>
       </form>
 
-      <div className="pt-4 border-t border-border">
-        <p className="text-sm text-muted-foreground text-center">
-          Don&apos;t have an account?{' '}
-          <Link href="/auth/signup" className="text-primary hover:underline font-medium">
-            Create one
-          </Link>
-        </p>
-      </div>
+      <AuthFooterLink variant="login" />
     </AuthLayout>
   )
 }
