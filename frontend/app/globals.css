@@ -99,19 +99,19 @@
   --card-foreground: #edede9;
   --popover: #1e1e1c;
   --popover-foreground: #edede9;
-  --primary: #7fa7bd;
+  --primary: #FFCC00;
   --primary-foreground: #151513;
   --secondary: #292724;
   --secondary-foreground: #edede9;
   --muted: #3f3f3d;
   --muted-foreground: #a8a5a0;
-  --accent: #7fa7bd;
+  --accent: #FFCC00;
   --accent-foreground: #151513;
   --destructive: #f87171;
   --border: #292724;
   --input: #3f3f3d;
-  --ring: #7fa7bd;
-  --chart-1: #7fa7bd;
+  --ring: #FFCC00;
+  --chart-1: #FFCC00;
   --chart-2: #a8a5a0;
   --chart-3: #3f3f3d;
   --chart-4: #292724;
@@ -122,12 +122,12 @@
   --gold-muted: #E0B400;
   --sidebar: #1e1e1c;
   --sidebar-foreground: #edede9;
-  --sidebar-primary: #7fa7bd;
+  --sidebar-primary: #FFCC00;
   --sidebar-primary-foreground: #151513;
   --sidebar-accent: #292724;
   --sidebar-accent-foreground: #edede9;
   --sidebar-border: #3A3935;
-  --sidebar-ring: #7fa7bd;
+  --sidebar-ring: #FFCC00;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -139,19 +139,19 @@
     --card-foreground: #edede9;
     --popover: #1e1e1c;
     --popover-foreground: #edede9;
-    --primary: #7fa7bd;
+    --primary: #FFCC00;
     --primary-foreground: #151513;
     --secondary: #292724;
     --secondary-foreground: #edede9;
     --muted: #3f3f3d;
     --muted-foreground: #a8a5a0;
-    --accent: #7fa7bd;
+    --accent: #FFCC00;
     --accent-foreground: #151513;
     --destructive: #f87171;
     --border: #292724;
     --input: #3f3f3d;
-    --ring: #7fa7bd;
-    --chart-1: #7fa7bd;
+    --ring: #FFCC00;
+    --chart-1: #FFCC00;
     --chart-2: #a8a5a0;
     --chart-3: #3f3f3d;
     --chart-4: #292724;
@@ -162,12 +162,12 @@
     --gold-muted: #E0B400;
     --sidebar: #1e1e1c;
     --sidebar-foreground: #edede9;
-    --sidebar-primary: #7fa7bd;
+    --sidebar-primary: #FFCC00;
     --sidebar-primary-foreground: #151513;
     --sidebar-accent: #292724;
     --sidebar-accent-foreground: #edede9;
     --sidebar-border: #3A3935;
-    --sidebar-ring: #7fa7bd;
+    --sidebar-ring: #FFCC00;
   }
 }
 

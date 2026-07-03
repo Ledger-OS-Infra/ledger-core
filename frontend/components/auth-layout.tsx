@@ -2,6 +2,8 @@
 
 import { type ReactNode } from 'react'
 import { Card } from '@/components/ui/card'
+import Image from 'next/image'
+import { useTheme } from '@/hooks/use-theme'
 
 interface AuthLayoutProps {
   title: string
@@ -10,14 +12,14 @@ interface AuthLayoutProps {
 }
 
 export function AuthLayout({ title, description, children }: AuthLayoutProps) {
+  const { theme, toggleTheme } = useTheme()
+  const resolvedTheme = theme ?? 'light'
+  const logoSrc = resolvedTheme === 'dark' ? '/ledger_core_L_white_64.png' : '/ledger_core_L_dark_text_64.png'
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
       {/* Logo */}
-      <div className="mb-8">
-        <div className="h-12 w-12 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg">
-          L
-        </div>
-      </div>
+      <Image src={logoSrc} alt="Logo" width={50} height={50} className="mb-8" />
 
       {/* Auth Card */}
       <Card className="w-full max-w-sm">
