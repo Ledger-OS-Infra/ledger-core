@@ -1,26 +1,16 @@
 import { Router, type Request, type Response } from "express";
 import { env } from "../config/env";
-import { logger } from "../lib/logger";
-import { claimEvent, releaseEvent } from "../idempotency/claimEvent";
+import { findCustomerByAccountNumber } from "../db/customers";
 import { insertPaymentEvent } from "../db/paymentEvents";
+import { claimEvent, releaseEvent } from "../idempotency/claimEvent";
+import { logger } from "../lib/logger";
 import {
   verifyNombaWebhookSignature,
   type NombaWebhookPayload,
 } from "../nomba/verifyWebhookSignature";
+import { enqueueReconciliationJob } from "../queues/reconciliation";
 
 export const webhooksRouter = Router();
-
-// TEMPORARY STUB: replace with the real findCustomerByAccountNumber from
-// db/customers.ts once #39 (issue #7) merges into main. Always returns "no
-// match" for now, so every webhook is intentionally treated as unmatched
-// until then. Swapping this for the real import is a one-line change.
-async function findCustomerStub(_accountNumber: string): Promise<{
-  customerId: string;
-  businessId: string;
-  virtualAccountId: string;
-} | null> {
-  return null;
-}
 
 webhooksRouter.post(
   env.nombaWebhookPath,
@@ -90,35 +80,27 @@ webhooksRouter.post(
       return;
     }
 
-    // Resolve customer via virtual account lookup. Stubbed until #39 merges,
-    // see findCustomerStub above.
     const accountNumber = payload.data?.transaction?.aliasAccountNumber;
-    const match = accountNumber ? await findCustomerStub(accountNumber) : null;
+    const customer = accountNumber
+      ? await findCustomerByAccountNumber(accountNumber)
+      : null;
 
-    if (!match) {
+    if (!customer) {
       logger.warn(
         { transactionId, accountNumber },
-        "Unmatched virtual account on webhook, persisting without customer link",
+        "Unknown virtual account on webhook — persisting as unmatched",
       );
     }
 
-    // Persist the raw event now that #3's schema is merged and
-    // payment_events accepts unmatched rows (virtual_account_id /
-    // business_id nullable, is_matched flag added).
-    //
-    // KNOWN GAP: claimEvent already locked this transactionId in Redis
-    // above. If this insert fails, the event stays "claimed" for 3 days
-    // even though nothing was actually persisted, so a Nomba retry would
-    // be silently treated as a duplicate and skipped. Logging loudly here
-    // so it's at least visible if it ever happens; revisit if this becomes
-    // a real problem.
+    let paymentEvent;
+
     try {
-      await insertPaymentEvent({
+      paymentEvent = await insertPaymentEvent({
         transactionId,
         transactionAmount,
-        virtualAccountId: match?.virtualAccountId ?? null,
-        businessId: match?.businessId ?? null,
-        isMatched: match !== null,
+        virtualAccountId: customer?.virtual_account.id ?? null,
+        businessId: customer?.business_id ?? null,
+        isMatched: customer !== null,
         senderName: payload.data?.customer?.senderName,
         senderAccount: payload.data?.customer?.accountNumber,
         rawPayload: payload as unknown as Record<string, unknown>,
@@ -134,13 +116,25 @@ webhooksRouter.post(
       return;
     }
 
-    // TODO: enqueue reconciliation job (BullMQ) once #15 exists.
+    if (customer) {
+      void enqueueReconciliationJob({ paymentEventId: paymentEvent.id }).catch(
+        (err) => {
+          logger.error(
+            { err, paymentEventId: paymentEvent.id, transactionId },
+            "Failed to enqueue reconciliation job",
+          );
+        },
+      );
+    }
+
     logger.info(
       {
         event_type: payload.event_type,
         requestId: payload.requestId,
         transactionId,
-        isMatched: match !== null,
+        paymentEventId: paymentEvent.id,
+        isMatched: customer !== null,
+        customerId: customer?.id,
       },
       "Nomba webhook received, claimed, and persisted",
     );

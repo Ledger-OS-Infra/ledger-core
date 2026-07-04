@@ -74,3 +74,15 @@ export async function insertPaymentEvent(
 
   return rows[0];
 }
+
+export async function getPaymentEventById(
+  paymentEventId: string,
+  client: DbClient = pool,
+): Promise<PaymentEventRow | null> {
+  const { rows } = await client.query<PaymentEventRow>(
+    `SELECT * FROM payment_events WHERE id = $1`,
+    [paymentEventId],
+  );
+
+  return rows[0] ?? null;
+}
