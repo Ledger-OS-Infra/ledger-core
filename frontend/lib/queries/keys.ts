@@ -9,7 +9,7 @@ export const queryKeys = {
   ) => ['obligations', businessId, params] as const,
   transactions: (
     businessId: string,
-    params: { page?: number; status?: string } = {},
+    params: { page?: number; matchStatus?: string } = {},
   ) => ['transactions', businessId, params] as const,
   billingRules: (businessId: string) => ['billingRules', businessId] as const,
   reports: (businessId: string) => ['reports', businessId] as const,

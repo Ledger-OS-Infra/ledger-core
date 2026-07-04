@@ -32,7 +32,7 @@ function matchExact(
 
   if (matches.length === 0) return null;
 
-  return matches.sort(
+  return [...matches].sort(
     (a, b) =>
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   )[0];
@@ -43,7 +43,7 @@ function matchFifo(
 ): PaymentObligationRow | null {
   if (obligations.length === 0) return null;
 
-  return obligations.sort(
+  return [...obligations].sort(
     (a, b) =>
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   )[0];

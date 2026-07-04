@@ -125,6 +125,11 @@ export async function listObligationsByCustomer(
     conditions.push(`obligation_type = $${values.length}`);
   }
 
+  if (filters.status) {
+    values.push(filters.status);
+    conditions.push(`status = $${values.length}`);
+  }
+
   const { rows } = await pool.query<PaymentObligationRow>(
     `SELECT *
      FROM payment_obligations
@@ -133,13 +138,7 @@ export async function listObligationsByCustomer(
     values,
   );
 
-  const obligations = rows.map(formatObligation);
-
-  if (!filters.status) {
-    return obligations;
-  }
-
-  return obligations.filter((obligation) => obligation.status === filters.status);
+  return rows.map(formatObligation);
 }
 
 export async function listRawObligationsByCustomer(

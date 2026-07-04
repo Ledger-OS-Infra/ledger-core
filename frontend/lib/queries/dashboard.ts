@@ -12,7 +12,7 @@ export function useDashboardQuery(businessId: string | null) {
       const id = businessId!
       const [metrics, aging, transactionResult, customers] = await Promise.all([
         reportingClient.getBusinessMetrics(id),
-        reportingClient.listAging(id),
+        reportingClient.listAging(id, { summaryOnly: true }),
         reportingClient.listTransactions(id),
         customerClient.listByBusiness(id),
       ])

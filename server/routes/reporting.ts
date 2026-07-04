@@ -33,6 +33,11 @@ import {
 } from "../lib/reporting/format";
 import { agingListQuery, monthlyInflowQuery, paginationQuery, recentListPaginationQuery } from "../lib/schemas/pagination";
 import { businessObligationsListQuery } from "../lib/schemas/obligations";
+import {
+  requireBusinessMember,
+  requireObligationMember,
+  requireReportingCustomerMember,
+} from "../middleware/businessAccess";
 import { validate } from "../middleware/validate";
 
 export const reportingRouter = Router();
@@ -49,6 +54,7 @@ function paginatedResponse<T>(items: T[], pagination: {
 reportingRouter.get(
   "/business/:businessId/metrics",
   validate({ params: businessIdParams }),
+  requireBusinessMember("businessId"),
   async (_req, res, next) => {
     try {
       const { businessId } = res.locals.params as { businessId: string };
@@ -68,6 +74,7 @@ reportingRouter.get(
 reportingRouter.get(
   "/business/:businessId/customers",
   validate({ params: businessIdParams, query: paginationQuery }),
+  requireBusinessMember("businessId"),
   async (_req, res, next) => {
     try {
       const { businessId } = res.locals.params as { businessId: string };
@@ -89,11 +96,18 @@ reportingRouter.get(
 reportingRouter.get(
   "/business/:businessId/transactions",
   validate({ params: businessIdParams, query: recentListPaginationQuery }),
+  requireBusinessMember("businessId"),
   async (_req, res, next) => {
     try {
       const { businessId } = res.locals.params as { businessId: string };
-      const query = res.locals.query as { page: number; limit: number };
-      const result = await listBusinessPaymentEvents(businessId, query);
+      const query = res.locals.query as {
+        page: number;
+        limit: number;
+        match_status?: "matched" | "unmatched";
+      };
+      const result = await listBusinessPaymentEvents(businessId, query, {
+        matchStatus: query.match_status,
+      });
 
       res.json(
         paginatedResponse(
@@ -110,6 +124,7 @@ reportingRouter.get(
 reportingRouter.get(
   "/business/:businessId/obligations",
   validate({ params: businessIdParams, query: businessObligationsListQuery }),
+  requireBusinessMember("businessId"),
   async (_req, res, next) => {
     try {
       const { businessId } = res.locals.params as { businessId: string };
@@ -140,6 +155,7 @@ reportingRouter.get(
 reportingRouter.get(
   "/business/:businessId/aging",
   validate({ params: businessIdParams, query: agingListQuery }),
+  requireBusinessMember("businessId"),
   async (_req, res, next) => {
     try {
       const { businessId } = res.locals.params as { businessId: string };
@@ -147,12 +163,29 @@ reportingRouter.get(
         page: number;
         limit: number;
         bucket?: string;
+        summary_only?: boolean;
       };
 
-      const [obligations, summary] = await Promise.all([
-        listObligationAging(businessId, query, { bucket: query.bucket }),
-        listAgingSummary(businessId),
-      ]);
+      const summary = await listAgingSummary(businessId);
+
+      if (query.summary_only) {
+        res.json({
+          data: {
+            obligations: paginatedResponse([], {
+              page: 1,
+              limit: query.limit,
+              total: 0,
+              total_pages: 0,
+            }),
+            summary: summary.map(formatAgingSummary),
+          },
+        });
+        return;
+      }
+
+      const obligations = await listObligationAging(businessId, query, {
+        bucket: query.bucket,
+      });
 
       res.json({
         data: {
@@ -172,6 +205,7 @@ reportingRouter.get(
 reportingRouter.get(
   "/business/:businessId/inflow/monthly",
   validate({ params: businessIdParams, query: monthlyInflowQuery }),
+  requireBusinessMember("businessId"),
   async (_req, res, next) => {
     try {
       const { businessId } = res.locals.params as { businessId: string };
@@ -187,6 +221,7 @@ reportingRouter.get(
 reportingRouter.get(
   "/customers/:customerId",
   validate({ params: reportingCustomerIdParams }),
+  requireReportingCustomerMember("customerId"),
   async (_req, res, next) => {
     try {
       const { customerId } = res.locals.params as { customerId: string };
@@ -206,6 +241,7 @@ reportingRouter.get(
 reportingRouter.get(
   "/customers/:customerId/obligations",
   validate({ params: reportingCustomerIdParams, query: paginationQuery }),
+  requireReportingCustomerMember("customerId"),
   async (_req, res, next) => {
     try {
       const { customerId } = res.locals.params as { customerId: string };
@@ -232,6 +268,7 @@ reportingRouter.get(
 reportingRouter.get(
   "/customers/:customerId/ledger",
   validate({ params: reportingCustomerIdParams, query: paginationQuery }),
+  requireReportingCustomerMember("customerId"),
   async (_req, res, next) => {
     try {
       const { customerId } = res.locals.params as { customerId: string };
@@ -258,6 +295,7 @@ reportingRouter.get(
 reportingRouter.get(
   "/obligations/:obligationId",
   validate({ params: obligationIdParams }),
+  requireObligationMember("obligationId"),
   async (_req, res, next) => {
     try {
       const { obligationId } = res.locals.params as { obligationId: string };
@@ -277,6 +315,7 @@ reportingRouter.get(
 reportingRouter.get(
   "/obligations/:obligationId/payments",
   validate({ params: obligationIdParams, query: paginationQuery }),
+  requireObligationMember("obligationId"),
   async (_req, res, next) => {
     try {
       const { obligationId } = res.locals.params as { obligationId: string };

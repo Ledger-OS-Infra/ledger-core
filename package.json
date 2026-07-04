@@ -12,7 +12,7 @@
     "db:migrate": "npm run migrate --prefix server",
     "db:bootstrap": "npm run db:bootstrap --prefix server",
     "db:setup": "npm run migrate --prefix server && npm run db:bootstrap --prefix server",
-    "dev": "npm run dev --prefix server",
+    "dev": "npm run dev --prefix server 2>&1 | npx pino-pretty",
     "start": "npm run dev --prefix frontend",
     "test": "npm run test --prefix server"
   },

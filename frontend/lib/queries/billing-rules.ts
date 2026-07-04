@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { billingClient, customerClient } from '@/lib/api'
+import { billingClient } from '@/lib/api'
 import type {
   BillingRuleListItem,
   CreateBillingRuleRequest,
@@ -13,22 +13,7 @@ export function useBillingRulesQuery(businessId: string | null) {
     enabled: !!businessId,
     queryKey: queryKeys.billingRules(businessId!),
     queryFn: async (): Promise<BillingRuleListItem[]> => {
-      const customers = await customerClient.listByBusiness(businessId!)
-      if (customers.length === 0) return []
-
-      const rulesByCustomer = await Promise.all(
-        customers.map(async (customer) => {
-          const rules = await billingClient.listByCustomer(customer.id)
-          return rules.map((rule) => ({
-            ...rule,
-            customerName: customer.full_name,
-          }))
-        }),
-      )
-
-      return rulesByCustomer
-        .flat()
-        .sort((a, b) => a.nextRunDate.localeCompare(b.nextRunDate))
+      return billingClient.listByBusiness(businessId!)
     },
     staleTime: STALE_TIME,
   })

@@ -41,10 +41,10 @@ export function verifyNombaWebhookSignature(
   const merchant = payload.data?.merchant ?? {};
   const transaction = payload.data?.transaction ?? {};
 
-  let responseCode = transaction.responseCode ?? "";
-  if (responseCode === "null") {
-    responseCode = "";
-  }
+  const responseCode =
+    transaction.responseCode === "null" || !transaction.responseCode
+      ? ""
+      : transaction.responseCode;
 
   const hashingPayload = [
     payload.event_type ?? "",

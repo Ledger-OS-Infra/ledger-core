@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { PageHeader } from '@/components/page-header'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -25,6 +25,8 @@ const STATUS_FILTERS = [
   { value: 'matched', label: 'Matched' },
   { value: 'unmatched', label: 'Unmatched' },
 ] as const
+
+type MatchStatusFilter = 'all' | 'matched' | 'unmatched'
 
 function transactionStatus(transaction: BusinessTransaction): 'matched' | 'unmatched' {
   return transaction.isMatched && transaction.customerId ? 'matched' : 'unmatched'
@@ -51,24 +53,20 @@ function transactionReasoning(transaction: BusinessTransaction): string {
 export default function TransactionsPage() {
   const { activeBusinessId } = useAuth()
   const [page, setPage] = useState(1)
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<MatchStatusFilter>('all')
+
+  const matchStatus =
+    statusFilter === 'all' ? undefined : statusFilter
 
   const {
     data,
     isLoading,
     isFetching,
     isError,
-  } = useTransactionsQuery(activeBusinessId, { page })
+  } = useTransactionsQuery(activeBusinessId, { page, matchStatus })
 
   const transactions = data?.items ?? []
   const pagination = data?.pagination
-
-  const filtered = useMemo(() => {
-    return transactions.filter((transaction) => {
-      if (statusFilter === 'all') return true
-      return transactionStatus(transaction) === statusFilter
-    })
-  }, [transactions, statusFilter])
 
   const showInitialLoading =
     !activeBusinessId || (isLoading && transactions.length === 0)
@@ -87,7 +85,7 @@ export default function TransactionsPage() {
             <Select
               value={statusFilter}
               onValueChange={(value) => {
-                setStatusFilter(value)
+                setStatusFilter(value as MatchStatusFilter)
                 setPage(1)
               }}
             >
@@ -117,15 +115,15 @@ export default function TransactionsPage() {
 
         {showInitialLoading ? (
           <p className="text-sm text-muted-foreground">Loading transactions…</p>
-        ) : filtered.length === 0 ? (
+        ) : transactions.length === 0 ? (
           <Card className="p-8 text-center text-sm text-muted-foreground">
-            {transactions.length === 0
+            {statusFilter === 'all'
               ? 'No payment events yet. Transactions appear here when Nomba webhooks are received.'
-              : 'No transactions match the selected filter on this page.'}
+              : 'No transactions match the selected filter.'}
           </Card>
         ) : (
           <div className="space-y-4">
-            {filtered.map((transaction) => {
+            {transactions.map((transaction) => {
               const status = transactionStatus(transaction)
               const statusVariant =
                 status === 'matched' ? 'success' : 'danger'

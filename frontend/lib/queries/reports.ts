@@ -11,7 +11,7 @@ export function useReportsQuery(businessId: string | null) {
     queryFn: async () => {
       const id = businessId!
       const [aging, monthlyInflow, customers] = await Promise.all([
-        reportingClient.listAging(id, { limit: 1 }),
+        reportingClient.listAging(id, { summaryOnly: true }),
         reportingClient.listMonthlyInflow(id, { months: 6 }),
         reportingClient.listBusinessCustomers(id, { limit: 100 }),
       ])

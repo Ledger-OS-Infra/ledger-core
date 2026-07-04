@@ -49,6 +49,7 @@ function signAccessToken(user: UserRow): string {
   };
   return jwt.sign(payload, env.jwtSecret, {
     expiresIn: env.jwtAccessExpiresIn as string & jwt.SignOptions["expiresIn"],
+    algorithm: "HS256",
   });
 }
 
@@ -386,7 +387,9 @@ export async function refreshAccessToken(rawRefreshToken: string): Promise<{
 
 export function verifyAccessToken(token: string): AccessTokenPayload {
   try {
-    return jwt.verify(token, env.jwtSecret) as AccessTokenPayload;
+    return jwt.verify(token, env.jwtSecret, {
+      algorithms: ["HS256"],
+    }) as AccessTokenPayload;
   } catch {
     throw new AppError("Invalid or expired access token", 401, "INVALID_ACCESS_TOKEN");
   }

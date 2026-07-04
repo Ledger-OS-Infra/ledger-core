@@ -17,6 +17,23 @@ export interface BusinessMemberWithName extends BusinessMemberRow {
   business_name: string;
 }
 
+export function canWriteBusiness(role: BusinessMemberRole): boolean {
+  return role === "owner" || role === "admin";
+}
+
+export async function getBusinessMembership(
+  userId: string,
+  businessId: string,
+  client: typeof pool | PoolClient = pool,
+): Promise<BusinessMemberRow | null> {
+  const { rows } = await client.query<BusinessMemberRow>(
+    `SELECT * FROM business_members
+     WHERE user_id = $1 AND business_id = $2`,
+    [userId, businessId],
+  );
+  return rows[0] ?? null;
+}
+
 export async function insertBusinessMember(
   input: {
     businessId: string;

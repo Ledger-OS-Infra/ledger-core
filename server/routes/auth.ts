@@ -5,6 +5,8 @@ import {
   loginRateLimit,
   forgotPasswordRateLimit,
   signupRateLimit,
+  refreshRateLimit,
+  resetPasswordRateLimit,
 } from "../middleware/rateLimit";
 import {
   signupBody,
@@ -94,6 +96,7 @@ authRouter.post(
 // ── POST /auth/reset-password ───────────────────────
 authRouter.post(
   "/reset-password",
+  resetPasswordRateLimit,
   validate({ body: resetPasswordBody }),
   async (req: Request, res: Response, next) => {
     try {
@@ -112,6 +115,7 @@ authRouter.post(
 // ── POST /auth/refresh ──────────────────────────────
 authRouter.post(
   "/refresh",
+  refreshRateLimit,
   async (req: Request, res: Response, next) => {
     try {
       const { refresh_token } = req.body as { refresh_token?: string };

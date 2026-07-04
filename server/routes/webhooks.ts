@@ -46,7 +46,7 @@ webhooksRouter.post(
 
     if (!transactionId) {
       logger.warn(
-        { payload },
+        { event_type: payload.event_type, requestId: payload.requestId },
         "Webhook payload missing transactionId, cannot dedupe",
       );
       res.status(400).json({ error: "Missing transactionId" });

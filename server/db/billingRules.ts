@@ -45,6 +45,10 @@ export interface BillingRuleResponse {
   updated_at: string;
 }
 
+export interface BillingRuleWithCustomerName extends BillingRuleResponse {
+  customer_name: string;
+}
+
 function parseMetadata(value: unknown): Record<string, unknown> {
   if (typeof value === "string") {
     return JSON.parse(value) as Record<string, unknown>;
@@ -137,6 +141,26 @@ export async function listBillingRulesByCustomer(
   );
 
   return rows.map(formatBillingRule);
+}
+
+export async function listBillingRulesByBusiness(
+  businessId: string,
+): Promise<BillingRuleWithCustomerName[]> {
+  const { rows } = await pool.query<
+    BillingRuleRow & { customer_name: string }
+  >(
+    `SELECT br.*, c.full_name AS customer_name
+     FROM billing_rules br
+     JOIN customers c ON c.id = br.customer_id
+     WHERE br.business_id = $1
+     ORDER BY br.next_run_date ASC, br.created_at ASC`,
+    [businessId],
+  );
+
+  return rows.map((row) => ({
+    ...formatBillingRule(row),
+    customer_name: row.customer_name,
+  }));
 }
 
 export async function getBillingRuleById(

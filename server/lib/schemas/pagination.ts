@@ -9,6 +9,7 @@ export const paginationQuery = z.object({
 export const recentListPaginationQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
+  match_status: z.enum(["matched", "unmatched"]).optional(),
 });
 
 export const agingListQuery = paginationQuery.extend({
@@ -21,6 +22,10 @@ export const agingListQuery = paginationQuery.extend({
       "90_plus_days",
     ])
     .optional(),
+  summary_only: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((value) => value === "true"),
 });
 
 export type PaginationQuery = z.infer<typeof paginationQuery>;

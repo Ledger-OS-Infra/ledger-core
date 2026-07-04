@@ -28,6 +28,19 @@ function normalizeBillingRule(raw: RawBillingRule): BillingRule {
 }
 
 export const billingClient = {
+  listByBusiness(businessId: string) {
+    return http
+      .get<Array<RawBillingRule & { customer_name: string }>>(
+        `/business/${encodeURIComponent(businessId)}/billing-rules`,
+      )
+      .then((rules) =>
+        rules.map((rule) => ({
+          ...normalizeBillingRule(rule),
+          customerName: rule.customer_name,
+        })),
+      )
+  },
+
   listByCustomer(customerId: string) {
     return http
       .get<RawBillingRule[]>(

@@ -49,6 +49,6 @@ void startReconciliationWorker().catch((err) => {
   console.error("Failed to start reconciliation worker", err);
 });
 
-void startReconciliationWorker().catch((err) => {
-  console.error("Failed to start reconciliation worker", err);
+void startBillingObligationWorker().catch((err) => {
+  console.error("Failed to start billing obligation worker", err);
 });

@@ -181,11 +181,18 @@ export const reportingClient = {
 
   async listAging(
     businessId: string,
-    params: { page?: number; limit?: number; bucket?: string } = {},
+    params: { page?: number; limit?: number; bucket?: string; summaryOnly?: boolean } = {},
   ): Promise<AgingSummary> {
     const raw = await http.get<RawAgingResponse>(
       `/reporting/business/${encodeURIComponent(businessId)}/aging`,
-      { query: { page: params.page, limit: params.limit, bucket: params.bucket } },
+      {
+        query: {
+          page: params.page,
+          limit: params.limit,
+          bucket: params.bucket,
+          summary_only: params.summaryOnly ? 'true' : undefined,
+        },
+      },
     )
     return normalizeAgingResponse(raw)
   },
@@ -206,11 +213,17 @@ export const reportingClient = {
 
   async listTransactions(
     businessId: string,
-    params: { page?: number; limit?: number } = {},
+    params: { page?: number; limit?: number; matchStatus?: 'matched' | 'unmatched' } = {},
   ) {
     const result = await http.getPaginated<RawBusinessTransaction>(
       `/reporting/business/${encodeURIComponent(businessId)}/transactions`,
-      { query: { page: params.page, limit: params.limit } },
+      {
+        query: {
+          page: params.page,
+          limit: params.limit,
+          match_status: params.matchStatus,
+        },
+      },
     )
 
     return {

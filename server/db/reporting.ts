@@ -134,6 +134,10 @@ export interface BusinessObligationsListFilters {
   type?: string;
 }
 
+export interface BusinessPaymentEventsFilters {
+  matchStatus?: "matched" | "unmatched";
+}
+
 const OBLIGATION_LIST_SELECT = `
   SELECT
     o.id AS obligation_id,
@@ -354,13 +358,30 @@ export async function listBusinessObligations(
 export async function listBusinessPaymentEvents(
   businessId: string,
   pagination: PaginationInput,
+  filters: BusinessPaymentEventsFilters = {},
 ): Promise<PaginatedResult<BusinessPaymentEventRow>> {
   const { page, limit, offset } = resolvePagination(pagination);
-  const total = await countRows(
-    "payment_events",
-    "WHERE business_id = $1",
-    [businessId],
-  );
+  const tableConditions = ["business_id = $1"];
+  const joinConditions = ["pe.business_id = $1"];
+  const values: unknown[] = [businessId];
+
+  if (filters.matchStatus === "matched") {
+    tableConditions.push("is_matched = TRUE");
+    joinConditions.push("pe.is_matched = TRUE");
+  }
+
+  if (filters.matchStatus === "unmatched") {
+    tableConditions.push("is_matched = FALSE");
+    joinConditions.push("pe.is_matched = FALSE");
+  }
+
+  const tableWhereClause = `WHERE ${tableConditions.join(" AND ")}`;
+  const joinWhereClause = `WHERE ${joinConditions.join(" AND ")}`;
+  const total = await countRows("payment_events", tableWhereClause, values);
+
+  values.push(limit, offset);
+  const limitParam = values.length - 1;
+  const offsetParam = values.length;
 
   const { rows } = await pool.query<BusinessPaymentEventRow>(
     `SELECT
@@ -375,10 +396,10 @@ export async function listBusinessPaymentEvents(
      FROM payment_events pe
      LEFT JOIN virtual_accounts va ON va.id = pe.virtual_account_id
      LEFT JOIN customers c ON c.id = va.customer_id
-     WHERE pe.business_id = $1
+     ${joinWhereClause}
      ORDER BY pe.received_at DESC NULLS LAST, pe.created_at DESC
-     LIMIT $2 OFFSET $3`,
-    [businessId, limit, offset],
+     LIMIT $${limitParam} OFFSET $${offsetParam}`,
+    values,
   );
 
   return {

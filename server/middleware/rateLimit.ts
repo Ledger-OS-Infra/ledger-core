@@ -56,3 +56,11 @@ export const forgotPasswordRateLimit = rateLimit(
 export const signupRateLimit = rateLimit(
   { windowSeconds: 60 * 60, maxAttempts: 10, keyPrefix: "signup" },
 );
+
+export const refreshRateLimit = rateLimit(
+  { windowSeconds: 15 * 60, maxAttempts: 30, keyPrefix: "refresh" },
+);
+
+export const resetPasswordRateLimit = rateLimit(
+  { windowSeconds: 60 * 60, maxAttempts: 10, keyPrefix: "reset-pw" },
+);
