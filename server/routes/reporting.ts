@@ -4,6 +4,7 @@ import {
   getCustomerBalance,
   getObligationDetail,
   listAgingSummary,
+  listBusinessPaymentEvents,
   listCustomerBalances,
   listCustomerLedgerHistory,
   listCustomerOutstandingObligations,
@@ -20,6 +21,7 @@ import {
 import {
   formatAgingSummary,
   formatBusinessMetrics,
+  formatBusinessPaymentEvent,
   formatCustomerBalance,
   formatLedgerHistoryRow,
   formatObligationAging,
@@ -71,6 +73,27 @@ reportingRouter.get(
       res.json(
         paginatedResponse(
           result.items.map(formatCustomerBalance),
+          result.pagination,
+        ),
+      );
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+reportingRouter.get(
+  "/business/:businessId/transactions",
+  validate({ params: businessIdParams, query: paginationQuery }),
+  async (_req, res, next) => {
+    try {
+      const { businessId } = res.locals.params as { businessId: string };
+      const query = res.locals.query as { page: number; limit: number };
+      const result = await listBusinessPaymentEvents(businessId, query);
+
+      res.json(
+        paginatedResponse(
+          result.items.map(formatBusinessPaymentEvent),
           result.pagination,
         ),
       );

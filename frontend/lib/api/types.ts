@@ -99,10 +99,33 @@ export interface RawAgingSummaryRow {
   total_outstanding: string
 }
 
+/** Paginated envelope used by list endpoints: `{ data, pagination }` */
+export interface RawPaginated<T> {
+  data: T[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    total_pages: number
+  }
+}
+
 /** Raw response body from GET /reporting/.../aging */
 export interface RawAgingResponse {
-  obligations: RawObligationAging[]
+  obligations: RawPaginated<RawObligationAging>
   summary: RawAgingSummaryRow[]
+}
+
+/** Raw row from GET /reporting/business/:id/transactions (payment events) */
+export interface RawBusinessTransaction {
+  id: string
+  business_id: string
+  customer_id: string | null
+  customer_name: string | null
+  amount: number
+  sender_name: string | null
+  is_matched: boolean
+  received_at: string | null
 }
 
 // ---------------------------------------------------------------------------
@@ -133,7 +156,10 @@ export interface ObligationAging {
   obligationId: string
   customerId: string
   customerName: string
+  obligationType: string
+  referenceCode: string | null
   amount: number
+  amountPaid: number
   outstanding: number
   dueDate: string
   status: string
@@ -144,6 +170,51 @@ export interface ObligationAging {
 /** Normalized aging response — summary is a pre-built lookup map */
 export interface AgingSummary {
   obligations: ObligationAging[]
-  /** e.g. { '0-30': 120000, '31-60': 80000, ... } */
+  /** Keyed by DB aging bucket, values in naira. e.g. { '1_30_days': 120000, ... } */
   summary: Record<string, number>
+}
+
+/** Raw row from GET /reporting/customers/:id/ledger */
+export interface RawCustomerLedgerEntry {
+  ledger_entry_id: string
+  customer_id: string
+  business_id: string
+  obligation_id: string | null
+  obligation_reference_code: string | null
+  obligation_type: string | null
+  entry_type: string
+  amount: number
+  balance_after: number
+  description: string
+  created_at: string | null
+  payment_event_id: string | null
+  payment_amount: number | null
+  sender_name: string | null
+  payment_received_at: string | null
+}
+
+/** Normalized ledger entry (amounts in naira) */
+export interface CustomerLedgerEntry {
+  ledgerEntryId: string
+  obligationId: string | null
+  obligationReferenceCode: string | null
+  obligationType: string | null
+  entryType: string
+  amount: number
+  balanceAfter: number
+  description: string
+  createdAt: string | null
+  senderName: string | null
+}
+
+/** Normalized payment event / transaction (amounts in naira) */
+export interface BusinessTransaction {
+  id: string
+  businessId: string
+  customerId: string | null
+  customerName: string | null
+  amount: number
+  senderName: string | null
+  isMatched: boolean
+  receivedAt: string | null
 }

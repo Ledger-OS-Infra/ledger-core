@@ -1,6 +1,7 @@
 import type {
   AgingSummaryRow,
   BusinessMetricsRow,
+  BusinessPaymentEventRow,
   CustomerBalanceRow,
   CustomerLedgerHistoryRow,
   ObligationAgingRow,
@@ -44,6 +45,19 @@ export function formatCustomerBalance(row: CustomerBalanceRow) {
     total_outstanding: amount(row.total_outstanding),
     wallet_credit: amount(row.wallet_credit),
     net_balance: amount(row.net_balance),
+  };
+}
+
+export function formatBusinessPaymentEvent(row: BusinessPaymentEventRow) {
+  return {
+    id: row.id,
+    business_id: row.business_id,
+    customer_id: row.customer_id,
+    customer_name: row.customer_name,
+    amount: amount(row.amount),
+    sender_name: row.sender_name,
+    is_matched: row.is_matched,
+    received_at: isoDate(row.received_at),
   };
 }
 

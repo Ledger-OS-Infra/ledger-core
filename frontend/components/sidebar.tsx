@@ -14,11 +14,11 @@ import {
   MdSettings,
   MdChevronLeft,
   MdChevronRight,
-  MdDarkMode,
-  MdLightMode,
+  MdLogout,
 } from 'react-icons/md'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/hooks/use-theme'
+import { useAuth } from '@/hooks/use-auth'
 
 export interface SidebarContextType {
   isExpanded: boolean
@@ -40,7 +40,16 @@ const navItems = [
 export function Sidebar() {
   const [isExpanded, setIsExpanded] = useState(true)
   const pathname = usePathname()
-  const { theme, toggleTheme } = useTheme()
+  const { theme } = useTheme()
+  const { user, logout } = useAuth()
+
+  const initials = (user?.fullName ?? '')
+    .split(' ')
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
 
   const toggleExpanded = () => setIsExpanded(!isExpanded)
   const resolvedTheme = theme ?? 'light'
@@ -127,19 +136,25 @@ export function Sidebar() {
 
         {/* Footer */}
         <div className="border-t border-sidebar-border space-y-2 px-2 py-4">
+          {user && isExpanded && (
+            <div className="flex items-center gap-3 rounded px-3 py-2">
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-xs font-semibold text-sidebar-accent-foreground">
+                {initials || '?'}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{user.fullName}</p>
+                <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+              </div>
+            </div>
+          )}
+
           <button
-            onClick={toggleTheme}
-            className="w-full flex items-center gap-3 rounded px-3 py-2 text-sm hover:bg-sidebar-accent transition-colors"
-            title={isExpanded ? undefined : resolvedTheme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            onClick={logout}
+            className="w-full flex items-center gap-3 rounded px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+            title={isExpanded ? undefined : 'Log out'}
           >
-            {resolvedTheme === 'light' ? (
-              <MdDarkMode className="h-5 w-5 flex-shrink-0" />
-            ) : (
-              <MdLightMode className="h-5 w-5 flex-shrink-0" />
-            )}
-            {isExpanded && (
-              <span className="capitalize">{resolvedTheme === 'dark' ? 'dark' : 'light'}</span>
-            )}
+            <MdLogout className="h-5 w-5 flex-shrink-0" />
+            {isExpanded && <span>Log out</span>}
           </button>
         </div>
       </aside>
