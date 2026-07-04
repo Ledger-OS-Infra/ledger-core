@@ -207,6 +207,64 @@ export interface CustomerLedgerEntry {
   senderName: string | null
 }
 
+// ---------------------------------------------------------------------------
+// Obligation CRUD types (amounts normalized to naira in the client)
+// ---------------------------------------------------------------------------
+
+export type ObligationType =
+  | 'INVOICE'
+  | 'SUBSCRIPTION'
+  | 'FEE'
+  | 'LEVY'
+  | 'CUSTOM'
+
+export type ObligationStatus = 'UNPAID' | 'PARTIAL' | 'PAID' | 'OVERDUE'
+
+/** Raw obligation from POST/GET /obligations endpoints (amounts in kobo) */
+export interface RawObligation {
+  id: string
+  customer_id: string
+  business_id: string
+  billing_rule_id: string | null
+  type: ObligationType
+  reference_code: string | null
+  amount: number
+  amount_paid: number
+  outstanding_balance: number
+  due_date: string
+  status: ObligationStatus
+  metadata: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export interface Obligation {
+  id: string
+  customerId: string
+  businessId: string
+  billingRuleId: string | null
+  type: ObligationType
+  referenceCode: string | null
+  amount: number
+  amountPaid: number
+  outstandingBalance: number
+  dueDate: string
+  status: ObligationStatus
+  metadata: Record<string, unknown>
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateObligationRequest {
+  customerId: string
+  type: ObligationType
+  /** Amount in naira — converted to kobo before POST */
+  amount: number
+  dueDate: string
+  referenceCode?: string
+  metadata?: Record<string, unknown>
+}
+
 /** Normalized payment event / transaction (amounts in naira) */
 export interface BusinessTransaction {
   id: string

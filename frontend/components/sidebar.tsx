@@ -136,21 +136,35 @@ export function Sidebar() {
 
         {/* Footer */}
         <div className="border-t border-sidebar-border space-y-2 px-2 py-4">
-          {user && isExpanded && (
-            <div className="flex items-center gap-3 rounded px-3 py-2">
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-xs font-semibold text-sidebar-accent-foreground">
-                {initials || '?'}
+          {user && (
+            isExpanded ? (
+              <div className="flex items-center gap-3 rounded px-3 py-2">
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-xs font-semibold text-sidebar-accent-foreground">
+                  {initials || '?'}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{user.fullName}</p>
+                  <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{user.fullName}</p>
-                <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+            ) : (
+              <div
+                className="flex justify-center py-1"
+                title={user.fullName}
+              >
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-xs font-semibold text-sidebar-accent-foreground">
+                  {initials || '?'}
+                </div>
               </div>
-            </div>
+            )
           )}
 
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 rounded px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+            className={cn(
+              'flex w-full items-center gap-3 rounded px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10',
+              !isExpanded && 'justify-center',
+            )}
             title={isExpanded ? undefined : 'Log out'}
           >
             <MdLogout className="h-5 w-5 flex-shrink-0" />

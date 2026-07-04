@@ -19,28 +19,31 @@ Create users, customers, obligations, billing rules, and webhooks via the Postma
    - Select **Ledger-Core - Local**
 
 3. **Run folder Auth** (steps 1–4):
-   - **Signup** → creates user + workspace linked to Nomba sub-account
+   - **Signup** → creates user account and sends verification email
    - **Verify email** → paste token from the verification email
    - **Login** → saves `accessToken` and `refreshToken` to environment
-   - **Get current user** → auto-sets `businessId` from your workspace
+   - **Get current user** → auto-sets `businessId` if you already have a workspace
 
-4. **Run folder Flow - start from scratch** (steps 1–17 in order). All protected endpoints automatically use the Bearer token from login.
+4. **If `/auth/me` returns no workspaces**, run **Businesses > Create business** (sets `businessId`).
 
-5. **Optional — subscription billing:** folder **Flow - subscription billing (DSTV)** (steps 1–6). Requires steps 1–2 from the main flow so `customerId` is set.
+5. **Run folder Flow - start from scratch** (steps 1–19 in order). All protected endpoints automatically use the Bearer token from login.
+
+6. **Optional — subscription billing:** folder **Flow - subscription billing (DSTV)** (steps 1–6). Requires steps 1–2 from the main flow so `customerId` is set.
 
 ## What gets created where
 
 | Step | Postgres tables | Notes |
 |------|-----------------|--------|
-| Auth 1. Signup | `users`, `businesses`, `business_members`, `auth_tokens` | Auto-creates workspace linked to Nomba sub-account |
+| Auth 1. Signup | `users`, `auth_tokens` | User only — no business yet |
+| Businesses > Create | `businesses`, `business_members` | Links workspace to Nomba sub-account |
 | Auth 3. Login | `refresh_tokens` | Issues JWT + refresh token |
-| Auth 4. Get me | — | Auto-sets `businessId` from workspace |
+| Auth 4. Get me | — | Auto-sets `businessId` when workspaces exist |
 | 2. Create customer | `customers`, `virtual_accounts`, `customer_wallets` | Also calls Nomba sandbox |
 | 4. Create obligation | `payment_obligations` | Amounts in kobo |
 | DSTV 1. Billing rule | `billing_rules` | Monthly ₦6,000, due on 1st |
 | DSTV 3. Generate due | `payment_obligations` | Auto-creates `MBU-YYYY-MM` rows |
-| 9. Webhook | `payment_events` | Redis idempotency key (no auth required) |
-| 10–17. Reporting | — | Read-only; uses env IDs from earlier steps |
+| 9. Webhook | `payment_events` | Redis idempotency key; async reconciliation (no auth) |
+| 10–19. Reporting | — | Read-only; uses env IDs from earlier steps |
 
 ## Environment variables
 
@@ -52,10 +55,11 @@ Create users, customers, obligations, billing rules, and webhooks via the Postma
 | `authName` | `Demo User` | — |
 | `accessToken` | empty | Auth > Login |
 | `refreshToken` | empty | Auth > Login |
-| `businessId` | empty | Auth > Get current user |
+| `businessId` | empty | Auth > Get current user, or Businesses > Create business |
 | `nombaWebhookSecret` | `NombaHackathon2026` | match `server/.env` |
 | `customerId` | empty | step 2 |
 | `obligationId` | empty | step 4 or DSTV step 4 |
+| `obligationReferenceCode` | empty | step 4 (used by webhook for payment matching) |
 | `billingRuleId` | empty | DSTV step 1 |
 | `billingAsOfDate` | `2026-07-01` | — (generates Jun + Jul MBU) |
 | `amountMbuKobo` | `600000` | ₦6,000 |
@@ -113,4 +117,4 @@ All `amount` fields are **kobo**: ₦1,500 → `150000`, ₦6,000 → `600000`.
 
 ## Reporting API
 
-OpenAPI spec: [`docs/openapi.yaml`](../docs/openapi.yaml). Main flow steps 10–17 exercise all reporting endpoints using `{{businessId}}`, `{{customerId}}`, and `{{obligationId}}`.
+OpenAPI spec: [`docs/openapi.yaml`](../docs/openapi.yaml). Main flow steps 10–19 exercise reporting endpoints using `{{businessId}}`, `{{customerId}}`, and `{{obligationId}}`.
