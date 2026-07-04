@@ -19,7 +19,7 @@ export function formatCurrencyShort(amount: number): string {
   if (amount >= 1_000_000) {
     return '₦' + (amount / 1_000_000).toFixed(1) + 'M'
   }
-  if (amount >= 1_000) {
+  if (amount >= 100_000) {
     return '₦' + (amount / 1_000).toFixed(1) + 'K'
   }
   return formatCurrency(amount)

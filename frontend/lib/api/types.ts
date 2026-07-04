@@ -100,14 +100,39 @@ export interface RawAgingSummaryRow {
 }
 
 /** Paginated envelope used by list endpoints: `{ data, pagination }` */
+export interface RawPaginationMeta {
+  page: number
+  limit: number
+  total: number
+  total_pages: number
+}
+
 export interface RawPaginated<T> {
   data: T[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    total_pages: number
-  }
+  pagination: RawPaginationMeta
+}
+
+export interface PaginationMeta {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+export interface PaginatedResult<T> {
+  items: T[]
+  pagination: PaginationMeta
+}
+
+/** Raw row from GET /reporting/business/:id/inflow/monthly */
+export interface RawMonthlyInflow {
+  month: string
+  total: number
+}
+
+export interface AgingBucketSummary {
+  amount: number
+  count: number
 }
 
 /** Raw response body from GET /reporting/.../aging */
@@ -172,6 +197,13 @@ export interface AgingSummary {
   obligations: ObligationAging[]
   /** Keyed by DB aging bucket, values in naira. e.g. { '1_30_days': 120000, ... } */
   summary: Record<string, number>
+  /** Amount + count per DB aging bucket */
+  buckets: Record<string, AgingBucketSummary>
+}
+
+export interface MonthlyInflowPoint {
+  month: string
+  amount: number
 }
 
 /** Raw row from GET /reporting/customers/:id/ledger */
@@ -275,4 +307,54 @@ export interface BusinessTransaction {
   senderName: string | null
   isMatched: boolean
   receivedAt: string | null
+}
+
+// ---------------------------------------------------------------------------
+// Billing rule types (amounts normalized to naira in the client)
+// ---------------------------------------------------------------------------
+
+export type BillingRecurrence = 'MONTHLY'
+
+export interface RawBillingRule {
+  id: string
+  customer_id: string
+  business_id: string
+  obligation_type: ObligationType
+  amount: number
+  recurrence: BillingRecurrence
+  day_of_month: number
+  next_run_date: string
+  is_active: boolean
+  metadata: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export interface BillingRule {
+  id: string
+  customerId: string
+  businessId: string
+  obligationType: ObligationType
+  amount: number
+  recurrence: BillingRecurrence
+  dayOfMonth: number
+  nextRunDate: string
+  isActive: boolean
+  metadata: Record<string, unknown>
+  createdAt: string
+  updatedAt: string
+}
+
+export interface BillingRuleListItem extends BillingRule {
+  customerName: string
+}
+
+export interface CreateBillingRuleRequest {
+  customerId: string
+  obligationType: ObligationType
+  /** Amount in naira — converted to kobo before POST */
+  amount: number
+  dayOfMonth: number
+  startDate: string
+  metadata?: Record<string, unknown>
 }

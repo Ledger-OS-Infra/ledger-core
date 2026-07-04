@@ -9,6 +9,7 @@ import {
   listCustomerBalances,
   listCustomerLedgerHistory,
   listCustomerOutstandingObligations,
+  listMonthlyInflow,
   listObligationAging,
   listObligationPaymentHistory,
   obligationExists,
@@ -25,11 +26,12 @@ import {
   formatBusinessPaymentEvent,
   formatCustomerBalance,
   formatLedgerHistoryRow,
+  formatMonthlyInflow,
   formatObligationAging,
   formatObligationDetail,
   formatPaymentHistoryRow,
 } from "../lib/reporting/format";
-import { agingListQuery, paginationQuery } from "../lib/schemas/pagination";
+import { agingListQuery, monthlyInflowQuery, paginationQuery, recentListPaginationQuery } from "../lib/schemas/pagination";
 import { businessObligationsListQuery } from "../lib/schemas/obligations";
 import { validate } from "../middleware/validate";
 
@@ -86,7 +88,7 @@ reportingRouter.get(
 
 reportingRouter.get(
   "/business/:businessId/transactions",
-  validate({ params: businessIdParams, query: paginationQuery }),
+  validate({ params: businessIdParams, query: recentListPaginationQuery }),
   async (_req, res, next) => {
     try {
       const { businessId } = res.locals.params as { businessId: string };
@@ -161,6 +163,21 @@ reportingRouter.get(
           summary: summary.map(formatAgingSummary),
         },
       });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+reportingRouter.get(
+  "/business/:businessId/inflow/monthly",
+  validate({ params: businessIdParams, query: monthlyInflowQuery }),
+  async (_req, res, next) => {
+    try {
+      const { businessId } = res.locals.params as { businessId: string };
+      const { months } = res.locals.query as { months: number };
+      const rows = await listMonthlyInflow(businessId, months);
+      res.json({ data: rows.map(formatMonthlyInflow) });
     } catch (err) {
       next(err);
     }

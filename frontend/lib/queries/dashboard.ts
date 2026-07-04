@@ -10,17 +10,18 @@ export function useDashboardQuery(businessId: string | null) {
     queryKey: queryKeys.dashboard(businessId!),
     queryFn: async () => {
       const id = businessId!
-      const [metrics, aging, transactions, customers] = await Promise.all([
+      const [metrics, aging, transactionResult, customers] = await Promise.all([
         reportingClient.getBusinessMetrics(id),
         reportingClient.listAging(id),
-        reportingClient.listTransactions(id, { limit: 10 }),
+        reportingClient.listTransactions(id),
         customerClient.listByBusiness(id),
       ])
 
       return {
         metrics,
         agingSummary: aging.summary,
-        transactions,
+        transactions: transactionResult.items,
+        transactionPagination: transactionResult.pagination,
         customers,
       }
     },

@@ -1,11 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { PageHeader } from '@/components/page-header'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
+import { ListPagination } from '@/components/list-pagination'
 import {
   Select,
   SelectContent,
@@ -42,36 +43,36 @@ const STATUS_FILTERS = [
 
 export default function ObligationsPage() {
   const { activeBusinessId } = useAuth()
+  const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
 
   const {
-    data: obligations = [],
+    data,
     isLoading,
     isFetching,
     isError,
-  } = useObligationsQuery(activeBusinessId)
+  } = useObligationsQuery(activeBusinessId, {
+    page,
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    type: typeFilter === 'all' ? undefined : typeFilter,
+  })
 
-  const filtered = useMemo(() => {
-    return obligations.filter((obligation) => {
-      if (
-        statusFilter !== 'all' &&
-        obligation.status.toUpperCase() !== statusFilter
-      ) {
-        return false
-      }
-      if (
-        typeFilter !== 'all' &&
-        obligation.obligationType.toUpperCase() !== typeFilter
-      ) {
-        return false
-      }
-      return true
-    })
-  }, [obligations, statusFilter, typeFilter])
+  const obligations = data?.items ?? []
+  const pagination = data?.pagination
 
   const showInitialLoading =
     !activeBusinessId || (isLoading && obligations.length === 0)
+
+  const handleStatusFilterChange = (value: string) => {
+    setStatusFilter(value)
+    setPage(1)
+  }
+
+  const handleTypeFilterChange = (value: string) => {
+    setTypeFilter(value)
+    setPage(1)
+  }
 
   return (
     <div>
@@ -88,7 +89,7 @@ export default function ObligationsPage() {
         <div className="mb-4 flex flex-wrap items-end gap-4">
           <div className="space-y-2">
             <Label htmlFor="status-filter">Status</Label>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
               <SelectTrigger id="status-filter" className="w-[180px]">
                 <SelectValue />
               </SelectTrigger>
@@ -104,7 +105,7 @@ export default function ObligationsPage() {
 
           <div className="space-y-2">
             <Label htmlFor="type-filter">Type</Label>
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <Select value={typeFilter} onValueChange={handleTypeFilterChange}>
               <SelectTrigger id="type-filter" className="w-[180px]">
                 <SelectValue />
               </SelectTrigger>
@@ -169,19 +170,19 @@ export default function ObligationsPage() {
                         Couldn&apos;t load obligations. Please try again.
                       </TableCell>
                     </TableRow>
-                  ) : filtered.length === 0 ? (
+                  ) : obligations.length === 0 ? (
                     <TableRow>
                       <TableCell
                         colSpan={6}
                         className="px-6 py-12 text-center text-sm text-muted-foreground"
                       >
-                        {obligations.length === 0
+                        {statusFilter === 'all' && typeFilter === 'all'
                           ? 'No obligations yet. Create one to start collecting payments.'
                           : 'No obligations match the selected filters.'}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filtered.map((obligation) => (
+                    obligations.map((obligation) => (
                       <TableRow
                         key={obligation.obligationId}
                         className="border-b border-border/60 transition-colors hover:bg-muted/40"
@@ -232,6 +233,14 @@ export default function ObligationsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {pagination && (
+          <ListPagination
+            className="mt-4"
+            pagination={pagination}
+            onPageChange={setPage}
+          />
+        )}
       </div>
     </div>
   )

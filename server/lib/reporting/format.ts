@@ -4,6 +4,7 @@ import type {
   BusinessPaymentEventRow,
   CustomerBalanceRow,
   CustomerLedgerHistoryRow,
+  MonthlyInflowRow,
   ObligationAgingRow,
   ObligationDetailRow,
   ObligationPaymentHistoryRow,
@@ -85,6 +86,13 @@ export function formatAgingSummary(row: AgingSummaryRow) {
     aging_bucket: row.aging_bucket,
     obligation_count: row.obligation_count,
     total_outstanding: amount(row.total_outstanding),
+  };
+}
+
+export function formatMonthlyInflow(row: MonthlyInflowRow) {
+  return {
+    month: row.month,
+    total: amount(row.total),
   };
 }
 
