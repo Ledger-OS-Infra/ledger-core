@@ -7,6 +7,7 @@ import {
   verifyNombaWebhookSignature,
   type NombaWebhookPayload,
 } from "../nomba/verifyWebhookSignature";
+import { enqueueReconciliationJob } from "../queues/reconciliationQueue";
 
 export const webhooksRouter = Router();
 
@@ -105,15 +106,15 @@ webhooksRouter.post(
     // Persist the raw event now that #3's schema is merged and
     // payment_events accepts unmatched rows (virtual_account_id /
     // business_id nullable, is_matched flag added).
-    //
     // KNOWN GAP: claimEvent already locked this transactionId in Redis
     // above. If this insert fails, the event stays "claimed" for 3 days
     // even though nothing was actually persisted, so a Nomba retry would
     // be silently treated as a duplicate and skipped. Logging loudly here
     // so it's at least visible if it ever happens; revisit if this becomes
     // a real problem.
+    let insertedEvent: { id: string };
     try {
-      await insertPaymentEvent({
+      insertedEvent = await insertPaymentEvent({
         transactionId,
         transactionAmount,
         virtualAccountId: match?.virtualAccountId ?? null,
@@ -134,7 +135,16 @@ webhooksRouter.post(
       return;
     }
 
-    // TODO: enqueue reconciliation job (BullMQ) once #15 exists.
+    await enqueueReconciliationJob({
+      paymentEventId: insertedEvent.id,
+      transactionId,
+      transactionAmount,
+      aliasAccountNumber: payload.data?.transaction?.aliasAccountNumber ?? null,
+      narration: payload.data?.transaction?.narration ?? null,
+      customerId: match?.customerId ?? null,
+      virtualAccountId: match?.virtualAccountId ?? null,
+      businessId: match?.businessId ?? null,
+    });
     logger.info(
       {
         event_type: payload.event_type,

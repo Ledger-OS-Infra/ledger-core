@@ -17,8 +17,8 @@ export interface NombaWebhookPayload {
       aliasAccountNumber?: string;
       aliasAccountName?: string;
       aliasAccountReference?: string;
-      /** Transfer amount in kobo (1 NGN = 100 kobo). */
       transactionAmount?: number;
+      narration?: string;
     };
     customer?: {
       senderName?: string;

@@ -7,6 +7,7 @@ import { obligationsRouter } from "./routes/obligations";
 import { billingRouter } from "./routes/billing";
 import { customersRouter } from "./routes/customers";
 import { startBillingObligationWorker } from "./workers/billingObligationWorker";
+import { startReconciliationWorker } from "./workers/reconciliationWorker";
 import { requestLogger } from "./middleware/requestLogger";
 import { errorHandler } from "./middleware/errorHandler";
 
@@ -36,6 +37,6 @@ app.listen(env.port, () => {
   console.info(`Ledger-Core API listening on http://localhost:${env.port}`);
 });
 
-void startBillingObligationWorker().catch((err) => {
-  console.error("Failed to start billing obligation worker", err);
+void startReconciliationWorker().catch((err) => {
+  console.error("Failed to start reconciliation worker", err);
 });
