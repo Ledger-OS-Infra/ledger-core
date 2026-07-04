@@ -1,4 +1,3 @@
-// frontend/app/auth/signup/page.tsx
 'use client'
 
 import { useState } from 'react'
@@ -11,7 +10,9 @@ import { ButtonCustom } from '@/components/ui/button-custom'
 import { AuthFooterLink } from '@/components/ui/auth-footer-link'
 import { AuthSuccessState } from '@/components/ui/auth-success-state'
 import { useFormValidation, FormErrors } from '@/hooks/use-form-validation'
-import { useRouter } from 'next/navigation'
+import { authClient } from '@/lib/api/auth'
+import { ApiError } from '@/lib/api/client'
+import Link from 'next/link'
 
 interface SignupFormValues {
   name: string
@@ -24,7 +25,7 @@ function validateSignupForm(values: SignupFormValues): FormErrors<SignupFormValu
   const newErrors: FormErrors<SignupFormValues> = {}
 
   if (!values.name.trim()) {
-    newErrors.name = 'Business name is required'
+    newErrors.name = 'Name is required'
   }
 
   if (!values.email.trim()) {
@@ -51,7 +52,6 @@ function validateSignupForm(values: SignupFormValues): FormErrors<SignupFormValu
 }
 
 export default function SignupPage() {
-  const router = useRouter()
   const {
     values: formData,
     errors,
@@ -60,11 +60,20 @@ export default function SignupPage() {
     handleChange,
     validateForm,
     hasErrors,
+    setGeneralError,
   } = useFormValidation<SignupFormValues>(
     { name: '', email: '', password: '', confirmPassword: '' },
     validateSignupForm
   )
   const [isSuccess, setIsSuccess] = useState(false)
+
+  const getErrorMessage = (err: unknown): string => {
+    if (err instanceof ApiError) {
+      return err.message
+    }
+  
+    return 'Something went wrong. Please try again.'
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -74,25 +83,37 @@ export default function SignupPage() {
 
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await authClient.signup({
+        full_name: formData.name,
+        email: formData.email,
+        password: formData.password,
+      })
       setIsSuccess(true)
+    } catch (err) {
+      setGeneralError(getErrorMessage(err))
       setIsLoading(false)
-
-      // Redirect after 2 seconds
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 2000)
-    }, 1500)
+    }
   }
 
   if (isSuccess) {
     return (
       <AuthLayout
-        title="Account Created"
-        description="Welcome to Ledger-Core. Redirecting to dashboard..."
+        title="Check Your Email"
+        description="We've sent a verification link"
       >
-        <AuthSuccessState message="Your account has been created successfully." />
+        <AuthSuccessState message="Your account has been created.">
+          <p className="text-sm text-muted-foreground mt-3">
+            We sent a verification link to <span className="font-medium text-foreground">{formData.email}</span>.
+            Please verify your email before signing in.
+          </p>
+          <Link
+            href="/auth/login"
+            className="inline-block mt-4 text-sm text-primary hover:underline font-medium"
+          >
+            Go to sign in
+          </Link>
+        </AuthSuccessState>
       </AuthLayout>
     )
   }
@@ -106,10 +127,10 @@ export default function SignupPage() {
         {errors.general && <FormError message={errors.general} />}
 
         <FormInput
-          label="Business Name"
+          label="Full Name"
           name="name"
           type="text"
-          placeholder="Your company name"
+          placeholder="Your full name"
           value={formData.name}
           onChange={handleChange}
           error={errors.name}

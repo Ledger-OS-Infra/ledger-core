@@ -86,6 +86,27 @@ export async function createObligation(
   return formatObligation(rows[0]);
 }
 
+export async function listUnsettledObligationsByCustomer(
+  customerId: string,
+): Promise<PaymentObligationRow[]> {
+  const { rows } = await pool.query<PaymentObligationRow>(
+    `SELECT *
+     FROM payment_obligations
+     WHERE customer_id = $1
+       AND amount_paid < amount
+     ORDER BY due_date ASC, created_at ASC`,
+    [customerId],
+  );
+
+  return rows.map((row) => ({
+    ...row,
+    metadata:
+      typeof row.metadata === "string"
+        ? (JSON.parse(row.metadata) as Record<string, unknown>)
+        : (row.metadata ?? {}),
+  }));
+}
+
 export async function listObligationsByCustomer(
   customerId: string,
   filters: ListObligationsFilters = {},

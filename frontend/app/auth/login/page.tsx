@@ -1,4 +1,3 @@
-// frontend/app/auth/login/page.tsx
 'use client'
 
 import { AuthLayout } from '@/components/auth-layout'
@@ -8,6 +7,9 @@ import { FormError } from '@/components/ui/form-error'
 import { ButtonCustom } from '@/components/ui/button-custom'
 import { AuthFooterLink } from '@/components/ui/auth-footer-link'
 import { useFormValidation, FormErrors } from '@/hooks/use-form-validation'
+import { useAuth } from '@/hooks/use-auth'
+import { authClient } from '@/lib/api/auth'
+import { ApiError } from '@/lib/api/client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -36,6 +38,7 @@ function validateLoginForm(values: LoginFormValues): FormErrors<LoginFormValues>
 
 export default function LoginPage() {
   const router = useRouter()
+  const { login } = useAuth()
   const {
     values: formData,
     errors,
@@ -47,6 +50,14 @@ export default function LoginPage() {
     setGeneralError,
   } = useFormValidation<LoginFormValues>({ email: '', password: '' }, validateLoginForm)
 
+  const getErrorMessage = (err: unknown): string => {
+    if (err instanceof ApiError) {
+      return err.message
+    }
+  
+    return 'Something went wrong. Please try again.'
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -55,17 +66,22 @@ export default function LoginPage() {
 
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      // Mock authentication - in real app, validate credentials
-      if (formData.email && formData.password) {
-        router.push('/dashboard')
-        return
-      }
+    try {
+      const result = await authClient.login({
+        email: formData.email,
+        password: formData.password,
+      })
 
-      setGeneralError('Invalid credentials')
+      // Wait for the user profile to load before navigating, so the route
+      // guard doesn't briefly bounce us back to /auth/login. New users with no
+      // workspace yet go to onboarding first.
+      const loggedInUser = await login(result)
+      const hasWorkspace = (loggedInUser?.workspaces.length ?? 0) > 0
+      router.replace(hasWorkspace ? '/dashboard' : '/onboarding')
+    } catch (err) {
+      setGeneralError(getErrorMessage(err))
       setIsLoading(false)
-    }, 1500)
+    }
   }
 
   return (
