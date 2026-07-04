@@ -9,6 +9,7 @@ import { billingRouter } from "./routes/billing";
 import { customersRouter } from "./routes/customers";
 import { businessesRouter } from "./routes/businesses";
 import { startBillingObligationWorker } from "./workers/billingObligationWorker";
+import { startReconciliationWorker } from "./workers/reconciliationWorker";
 import { requestLogger } from "./middleware/requestLogger";
 import { errorHandler } from "./middleware/errorHandler";
 import { requireAuth } from "./middleware/requireAuth";
@@ -46,4 +47,8 @@ app.listen(env.port, () => {
 
 void startBillingObligationWorker().catch((err) => {
   console.error("Failed to start billing obligation worker", err);
+});
+
+void startReconciliationWorker().catch((err) => {
+  console.error("Failed to start reconciliation worker", err);
 });

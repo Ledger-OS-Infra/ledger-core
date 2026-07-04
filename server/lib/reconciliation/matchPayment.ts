@@ -56,7 +56,10 @@ export function matchPayment(
 ): MatchResult | null {
   const open = obligations.filter(
     (obligation) =>
-      obligation.status === "UNPAID" || obligation.status === "PARTIAL",
+      obligation.status === "UNPAID" ||
+      obligation.status === "PARTIAL" ||
+      obligation.status === "OVERDUE" ||
+      getOutstanding(obligation) > 0,
   );
 
   if (open.length === 0) return null;
