@@ -1,10 +1,11 @@
-
-
 export * from './types'
 export * from './client'
 export * from './customers'
 export * from './reporting'
-
+export * from './auth'
+export * from './businesses'
 
 export { customerClient as customersApi } from './customers'
 export { reportingClient as reportingApi } from './reporting'
+export { authClient as authApi } from './auth'
+export { businessClient as businessesApi } from './businesses'

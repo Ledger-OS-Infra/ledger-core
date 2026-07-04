@@ -109,6 +109,17 @@ export interface CustomerLedgerHistoryRow {
   payment_received_at: Date | null;
 }
 
+export interface BusinessPaymentEventRow {
+  id: string;
+  business_id: string;
+  amount: string;
+  sender_name: string | null;
+  is_matched: boolean;
+  received_at: Date;
+  customer_id: string | null;
+  customer_name: string | null;
+}
+
 export interface AgingListFilters {
   bucket?: string;
 }
@@ -250,6 +261,42 @@ export async function listObligationAging(
      ORDER BY days_overdue DESC, due_date ASC
      LIMIT $${limitParam} OFFSET $${offsetParam}`,
     values,
+  );
+
+  return {
+    items: rows,
+    pagination: buildPaginationMeta(total, page, limit),
+  };
+}
+
+export async function listBusinessPaymentEvents(
+  businessId: string,
+  pagination: PaginationInput,
+): Promise<PaginatedResult<BusinessPaymentEventRow>> {
+  const { page, limit, offset } = resolvePagination(pagination);
+  const total = await countRows(
+    "payment_events",
+    "WHERE business_id = $1",
+    [businessId],
+  );
+
+  const { rows } = await pool.query<BusinessPaymentEventRow>(
+    `SELECT
+       pe.id,
+       pe.business_id,
+       pe.amount,
+       pe.sender_name,
+       pe.is_matched,
+       pe.received_at,
+       c.id AS customer_id,
+       c.full_name AS customer_name
+     FROM payment_events pe
+     LEFT JOIN virtual_accounts va ON va.id = pe.virtual_account_id
+     LEFT JOIN customers c ON c.id = va.customer_id
+     WHERE pe.business_id = $1
+     ORDER BY pe.received_at DESC
+     LIMIT $2 OFFSET $3`,
+    [businessId, limit, offset],
   );
 
   return {
