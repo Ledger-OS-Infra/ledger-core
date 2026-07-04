@@ -12,6 +12,13 @@ import {
 import { useRouter, usePathname } from 'next/navigation'
 import { authClient, type AuthUser, type LoginResponse } from '@/lib/api/auth'
 import { setTokenAccessor } from '@/lib/api/client'
+import {
+  clearAuthTokens,
+  getStoredAccessToken,
+  getStoredRefreshToken,
+  readAccessToken,
+  storeAuthTokens,
+} from '@/lib/auth-storage'
 
 interface AuthState {
   user: AuthUser | null
@@ -28,30 +35,11 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null)
 
-const ACCESS_TOKEN_KEY = 'lc_access_token'
-const REFRESH_TOKEN_KEY = 'lc_refresh_token'
-
-function getStoredToken(): string | null {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem(ACCESS_TOKEN_KEY)
-}
-
-function getStoredRefreshToken(): string | null {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem(REFRESH_TOKEN_KEY)
-}
-
-function storeTokens(access: string, refresh: string) {
-  localStorage.setItem(ACCESS_TOKEN_KEY, access)
-  localStorage.setItem(REFRESH_TOKEN_KEY, refresh)
-}
-
-function clearTokens() {
-  localStorage.removeItem(ACCESS_TOKEN_KEY)
-  localStorage.removeItem(REFRESH_TOKEN_KEY)
-}
-
 const AUTH_ROUTES = ['/auth/login', '/auth/signup', '/auth/forgot-password', '/auth/reset-password', '/auth/verify-email']
+
+function registerTokenAccessor() {
+  setTokenAccessor(readAccessToken)
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -62,19 +50,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAuthRoute = AUTH_ROUTES.some((r) => pathname.startsWith(r))
 
   const logout = useCallback(() => {
-    clearTokens()
+    clearAuthTokens()
     setUser(null)
     router.push('/auth/login')
   }, [router])
 
-  // Wire the token accessor so apiFetch can read it
+  // Re-register after HMR — client.ts module reset clears the in-memory accessor.
   useEffect(() => {
-    setTokenAccessor(getStoredToken)
+    registerTokenAccessor()
   }, [])
 
   const refreshUser = useCallback(async (): Promise<AuthUser | null> => {
-    const token = getStoredToken()
-    if (!token) {
+    registerTokenAccessor()
+    const token = getStoredAccessToken()
+    if (!token || token === 'undefined' || token === 'null') {
       setUser(null)
       setIsLoading(false)
       return null
@@ -90,17 +79,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (refreshToken) {
         try {
           const result = await authClient.refresh(refreshToken)
-          storeTokens(result.accessToken, result.refreshToken)
+          storeAuthTokens(result.accessToken, result.refreshToken)
           const me = await authClient.me()
           setUser(me)
           return me
         } catch {
-          clearTokens()
+          clearAuthTokens()
           setUser(null)
           return null
         }
       }
-      clearTokens()
+      clearAuthTokens()
       setUser(null)
       return null
     } finally {
@@ -110,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (data: LoginResponse): Promise<AuthUser | null> => {
-      storeTokens(data.accessToken, data.refreshToken)
+      storeAuthTokens(data.accessToken, data.refreshToken)
       // Await the profile load so `user` is populated before the caller
       // navigates — otherwise the route guard sees a null user on a protected
       // route and bounces back to /auth/login (causing a flicker).

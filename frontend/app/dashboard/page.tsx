@@ -52,7 +52,6 @@ export default function DashboardPage() {
   const unmatchedTransactions = transactions.filter(
     (transaction) => !transaction.isMatched,
   );
-  const recentTransactions = transactions.slice(0, 5);
 
   const agingBuckets = AGING_ROWS.map((row) => ({
     ...row,
@@ -131,12 +130,12 @@ export default function DashboardPage() {
               </div>
               <CardContent className="p-0">
                 <div className="divide-y divide-border">
-                  {recentTransactions.length === 0 ? (
+                  {transactions.length === 0 ? (
                     <div className="px-6 py-8 text-center text-muted-foreground text-sm">
                       No transactions yet
                     </div>
                   ) : (
-                    recentTransactions.map((transaction) => {
+                    transactions.map((transaction) => {
                       const title =
                         transaction.customerName ??
                         transaction.senderName ??

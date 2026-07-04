@@ -50,6 +50,11 @@ export interface AgingSummaryRow {
   total_outstanding: string;
 }
 
+export interface MonthlyInflowRow {
+  month: string;
+  total: string;
+}
+
 export interface ObligationDetailRow {
   obligation_id: string;
   business_id: string;
@@ -371,7 +376,7 @@ export async function listBusinessPaymentEvents(
      LEFT JOIN virtual_accounts va ON va.id = pe.virtual_account_id
      LEFT JOIN customers c ON c.id = va.customer_id
      WHERE pe.business_id = $1
-     ORDER BY pe.received_at DESC
+     ORDER BY pe.received_at DESC NULLS LAST, pe.created_at DESC
      LIMIT $2 OFFSET $3`,
     [businessId, limit, offset],
   );
@@ -391,6 +396,24 @@ export async function listAgingSummary(
      WHERE business_id = $1
      ORDER BY aging_bucket`,
     [businessId],
+  );
+  return rows;
+}
+
+export async function listMonthlyInflow(
+  businessId: string,
+  months = 6,
+): Promise<MonthlyInflowRow[]> {
+  const { rows } = await pool.query<MonthlyInflowRow>(
+    `SELECT
+       to_char(date_trunc('month', pe.received_at), 'YYYY-MM') AS month,
+       COALESCE(SUM(pe.amount), 0)::TEXT AS total
+     FROM payment_events pe
+     WHERE pe.business_id = $1
+       AND pe.received_at >= date_trunc('month', CURRENT_DATE) - ($2::int - 1) * interval '1 month'
+     GROUP BY date_trunc('month', pe.received_at)
+     ORDER BY date_trunc('month', pe.received_at) ASC`,
+    [businessId, months],
   );
   return rows;
 }

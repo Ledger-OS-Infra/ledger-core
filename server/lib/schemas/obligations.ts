@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { paginationQuery } from "./pagination";
+import { recentListPaginationQuery } from "./pagination";
 import {
   OBLIGATION_STATUSES,
   OBLIGATION_TYPES,
@@ -45,7 +45,7 @@ export const listObligationsQuery = z.object({
   type: obligationTypeSchema.optional(),
 });
 
-export const businessObligationsListQuery = paginationQuery.merge(
+export const businessObligationsListQuery = recentListPaginationQuery.merge(
   listObligationsQuery,
 );
 
