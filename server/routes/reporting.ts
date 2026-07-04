@@ -4,6 +4,7 @@ import {
   getCustomerBalance,
   getObligationDetail,
   listAgingSummary,
+  listBusinessObligations,
   listBusinessPaymentEvents,
   listCustomerBalances,
   listCustomerLedgerHistory,
@@ -29,6 +30,7 @@ import {
   formatPaymentHistoryRow,
 } from "../lib/reporting/format";
 import { agingListQuery, paginationQuery } from "../lib/schemas/pagination";
+import { businessObligationsListQuery } from "../lib/schemas/obligations";
 import { validate } from "../middleware/validate";
 
 export const reportingRouter = Router();
@@ -94,6 +96,36 @@ reportingRouter.get(
       res.json(
         paginatedResponse(
           result.items.map(formatBusinessPaymentEvent),
+          result.pagination,
+        ),
+      );
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+reportingRouter.get(
+  "/business/:businessId/obligations",
+  validate({ params: businessIdParams, query: businessObligationsListQuery }),
+  async (_req, res, next) => {
+    try {
+      const { businessId } = res.locals.params as { businessId: string };
+      const query = res.locals.query as {
+        page: number;
+        limit: number;
+        status?: string;
+        type?: string;
+      };
+
+      const result = await listBusinessObligations(businessId, query, {
+        status: query.status,
+        type: query.type,
+      });
+
+      res.json(
+        paginatedResponse(
+          result.items.map(formatObligationAging),
           result.pagination,
         ),
       );

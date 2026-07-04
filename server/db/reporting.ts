@@ -124,6 +124,37 @@ export interface AgingListFilters {
   bucket?: string;
 }
 
+export interface BusinessObligationsListFilters {
+  status?: string;
+  type?: string;
+}
+
+const OBLIGATION_LIST_SELECT = `
+  SELECT
+    o.id AS obligation_id,
+    o.business_id,
+    o.customer_id,
+    c.full_name AS customer_name,
+    o.obligation_type,
+    o.reference_code,
+    o.amount,
+    o.amount_paid,
+    (o.amount - o.amount_paid)::BIGINT AS outstanding,
+    o.due_date,
+    o.status,
+    GREATEST(CURRENT_DATE - o.due_date, 0)::INT AS days_overdue,
+    CASE
+      WHEN o.status = 'PAID' THEN 'paid'
+      WHEN o.due_date >= CURRENT_DATE THEN 'current'
+      WHEN CURRENT_DATE - o.due_date <= 30 THEN '1_30_days'
+      WHEN CURRENT_DATE - o.due_date <= 60 THEN '31_60_days'
+      WHEN CURRENT_DATE - o.due_date <= 90 THEN '61_90_days'
+      ELSE '90_plus_days'
+    END AS aging_bucket
+  FROM payment_obligations o
+  JOIN customers c ON c.id = o.customer_id
+`;
+
 async function countRows(
   tableOrView: string,
   whereClause: string,
@@ -259,6 +290,52 @@ export async function listObligationAging(
      FROM v_obligation_aging
      ${whereClause}
      ORDER BY days_overdue DESC, due_date ASC
+     LIMIT $${limitParam} OFFSET $${offsetParam}`,
+    values,
+  );
+
+  return {
+    items: rows,
+    pagination: buildPaginationMeta(total, page, limit),
+  };
+}
+
+export async function listBusinessObligations(
+  businessId: string,
+  pagination: PaginationInput,
+  filters: BusinessObligationsListFilters = {},
+): Promise<PaginatedResult<ObligationAgingRow>> {
+  const { page, limit, offset } = resolvePagination(pagination);
+  const values: unknown[] = [businessId];
+  let whereClause = "WHERE o.business_id = $1";
+
+  if (filters.status) {
+    values.push(filters.status);
+    whereClause += ` AND o.status = $${values.length}`;
+  }
+
+  if (filters.type) {
+    values.push(filters.type);
+    whereClause += ` AND o.obligation_type = $${values.length}`;
+  }
+
+  const { rows: countRowsResult } = await pool.query<{ total: string }>(
+    `SELECT COUNT(*)::TEXT AS total
+     FROM payment_obligations o
+     JOIN customers c ON c.id = o.customer_id
+     ${whereClause}`,
+    values,
+  );
+  const total = Number(countRowsResult[0]?.total ?? 0);
+
+  values.push(limit, offset);
+  const limitParam = values.length - 1;
+  const offsetParam = values.length;
+
+  const { rows } = await pool.query<ObligationAgingRow>(
+    `${OBLIGATION_LIST_SELECT}
+     ${whereClause}
+     ORDER BY o.created_at DESC
      LIMIT $${limitParam} OFFSET $${offsetParam}`,
     values,
   );

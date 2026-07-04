@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "c4e8f1a2-9b3d-4f6e-a1c2-8d7e6f5a4b3c",
     "name": "Ledger-Core API",
-    "description": "**New flow:** Auth > Signup → Verify → Login → Get current user (auto-sets businessId + accessToken). Then run **Flow - start from scratch**.\n\nAll protected endpoints inherit Bearer auth from the collection. Webhook stays unauthenticated.\n\nPrerequisites: docker compose up, npm run migrate, npm run dev, select Ledger-Core - Local environment.\n\nAmounts are kobo (NGN x 100).",
+    "description": "**New flow:** Auth > Signup → Verify → Login → Get current user. If no workspace, run **Businesses > Create business**. Then **Flow - start from scratch**.\n\nAll protected endpoints inherit Bearer auth from the collection. Webhook stays unauthenticated.\n\nPrerequisites: server running (`npm run dev --prefix server`), migrations applied, select Ledger-Core - Local environment.\n\nAmounts are kobo (NGN x 100). Webhook triggers async reconciliation (customer lookup → match → ledger).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -18,7 +18,7 @@
   "item": [
     {
       "name": "Auth",
-      "description": "Authentication endpoints. Run Signup then Login before using protected endpoints. Login saves accessToken and refreshToken.",
+      "description": "Authentication endpoints. Run Signup → Verify → Login → Get current user. If no workspace, use Businesses > Create business before the main flow.",
       "auth": { "type": "noauth" },
       "item": [
         {
@@ -55,7 +55,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["auth", "signup"]
             },
-            "description": "Creates user + workspace + sends verification email. Set authEmail/authPassword/authName in environment."
+            "description": "Creates user account and sends verification email. Does not create a business — use Businesses > Create business after login if /auth/me has no workspaces."
           },
           "response": []
         },
@@ -294,8 +294,88 @@
       ]
     },
     {
+      "name": "Businesses",
+      "description": "Workspace onboarding. Signup creates the user only; create a business here before customers/obligations if GET /auth/me returns an empty workspaces array.",
+      "item": [
+        {
+          "name": "List workspaces",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Workspaces listed', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "    var workspaces = pm.response.json().data;",
+                  "    if (workspaces.length > 0) {",
+                  "        pm.environment.set('businessId', workspaces[0].businessId);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses"]
+            },
+            "description": "Lists businesses the authenticated user belongs to. Auto-sets businessId from the first workspace."
+          },
+          "response": []
+        },
+        {
+          "name": "Create business",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Business created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "    var data = pm.response.json().data;",
+                  "    pm.environment.set('businessId', data.businessId);",
+                  "    pm.test('Owner role assigned', function () {",
+                  "        pm.expect(data.role).to.eql('owner');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Workspace {{$timestamp}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/businesses",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses"]
+            },
+            "description": "Creates a workspace tied to NOMBA_SUB_ACCOUNT_ID from server env."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Flow - start from scratch",
-      "description": "Run Auth > Login first to get accessToken. Then run steps 1-17 in order. Test scripts save customerId, obligationId, and VA details.",
+      "description": "Run Auth > Login first (and Businesses > Create business if needed). Then run steps 1-19 in order. Test scripts save customerId, obligationId, obligationReferenceCode, and VA details.",
       "item": [
         {
           "name": "1. Health check",
@@ -398,6 +478,9 @@
                   "if (pm.response.code === 201) {",
                   "    var data = pm.response.json().data;",
                   "    pm.environment.set('obligationId', data.id);",
+                  "    if (data.reference_code) {",
+                  "        pm.environment.set('obligationReferenceCode', data.reference_code);",
+                  "    }",
                   "}"
                 ]
               }
@@ -512,9 +595,11 @@
                   "var secret = pm.environment.get('nombaWebhookSecret');",
                   "var accountNumber = pm.environment.get('customerAccountNumber');",
                   "var accountRef = pm.environment.get('nombaAccountRef');",
+                  "var obligationRef = pm.environment.get('obligationReferenceCode');",
                   "if (!accountNumber || !accountRef) {",
                   "    throw new Error('Run step 2 first.');",
                   "}",
+                  "var aliasRef = obligationRef || accountRef;",
                   "var timestamp = new Date().toISOString();",
                   "var transactionId = 'txn_postman_' + Date.now();",
                   "var requestId = 'req_postman_' + Date.now();",
@@ -533,7 +618,7 @@
                   "            responseCode: '',",
                   "            aliasAccountNumber: accountNumber,",
                   "            aliasAccountName: 'Postman/Test Customer',",
-                  "            aliasAccountReference: accountRef,",
+                  "            aliasAccountReference: aliasRef,",
                   "            transactionAmount: Number(pm.environment.get('webhookAmountKobo'))",
                   "        },",
                   "        customer: {",
@@ -708,6 +793,42 @@
                 { "key": "limit", "value": "20" }
               ]
             }
+          },
+          "response": []
+        },
+        {
+          "name": "18. Business transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/business/{{businessId}}/transactions?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "business", "{{businessId}}", "transactions"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "description": "Paginated payment events for the business (dashboard transactions feed). Run after step 9 webhook."
+          },
+          "response": []
+        },
+        {
+          "name": "19. Business obligations (all statuses)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/business/{{businessId}}/obligations?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "business", "{{businessId}}", "obligations"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "description": "All obligations including PAID. Optional filters: status (UNPAID|PARTIAL|PAID|OVERDUE), type (INVOICE|SUBSCRIPTION|...)."
           },
           "response": []
         }
@@ -1263,6 +1384,122 @@
                 { "key": "limit", "value": "20" }
               ]
             }
+          },
+          "response": []
+        },
+        {
+          "name": "List workspaces",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create business",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set('businessId', pm.response.json().data.businessId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Workspace {{$timestamp}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/businesses",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get customer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Patch customer",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"metadata\": { \"note\": \"Updated via Postman\" }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Business transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/business/{{businessId}}/transactions?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "business", "{{businessId}}", "transactions"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Business obligations (all statuses)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reporting/business/{{businessId}}/obligations?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["reporting", "business", "{{businessId}}", "obligations"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "status", "value": "PAID", "disabled": true },
+                { "key": "type", "value": "INVOICE", "disabled": true }
+              ]
+            },
+            "description": "Includes PAID obligations (unlike aging report). Enable status/type query params to filter."
           },
           "response": []
         }

@@ -125,9 +125,31 @@ export const reportingClient = {
     return raw.map(normalizeCustomerBalance)
   },
 
-  async listAging(businessId: string): Promise<AgingSummary> {
+  async listBusinessObligations(
+    businessId: string,
+    params: { page?: number; limit?: number; status?: string; type?: string } = {},
+  ): Promise<ObligationAging[]> {
+    const raw = await http.get<RawObligationAging[]>(
+      `/reporting/business/${encodeURIComponent(businessId)}/obligations`,
+      {
+        query: {
+          page: params.page,
+          limit: params.limit,
+          status: params.status,
+          type: params.type,
+        },
+      },
+    )
+    return raw.map(normalizeObligationAging)
+  },
+
+  async listAging(
+    businessId: string,
+    params: { page?: number; limit?: number; bucket?: string } = {},
+  ): Promise<AgingSummary> {
     const raw = await http.get<RawAgingResponse>(
       `/reporting/business/${encodeURIComponent(businessId)}/aging`,
+      { query: { page: params.page, limit: params.limit, bucket: params.bucket } },
     )
     return normalizeAgingResponse(raw)
   },

@@ -5,3 +5,4 @@ export {
   useCustomerDetailQuery,
   type CustomerListItem,
 } from './customers'
+export { useObligationsQuery, useCreateObligationMutation } from './obligations'
