@@ -142,6 +142,34 @@ export async function listObligationsByCustomer(
   return obligations.filter((obligation) => obligation.status === filters.status);
 }
 
+export async function listRawObligationsByCustomer(
+  customerId: string,
+  filters: ListObligationsFilters = {},
+): Promise<PaymentObligationRow[]> {
+  const conditions = ["customer_id = $1"];
+  const values: Array<string | ObligationType> = [customerId];
+
+  if (filters.type) {
+    values.push(filters.type);
+    conditions.push(`obligation_type = $${values.length}`);
+  }
+
+  if (filters.status) {
+    values.push(filters.status);
+    conditions.push(`status = $${values.length}`);
+  }
+
+  const { rows } = await pool.query<PaymentObligationRow>(
+    `SELECT *
+     FROM payment_obligations
+     WHERE ${conditions.join(" AND ")}
+     ORDER BY due_date ASC, created_at ASC`,
+    values,
+  );
+
+  return rows;
+}
+
 export async function getObligationById(
   obligationId: string,
 ): Promise<ObligationResponse | null> {

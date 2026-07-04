@@ -45,8 +45,8 @@ app.listen(env.port, () => {
   console.info(`Ledger-Core API listening on http://localhost:${env.port}`);
 });
 
-void startBillingObligationWorker().catch((err) => {
-  console.error("Failed to start billing obligation worker", err);
+void startReconciliationWorker().catch((err) => {
+  console.error("Failed to start reconciliation worker", err);
 });
 
 void startReconciliationWorker().catch((err) => {
