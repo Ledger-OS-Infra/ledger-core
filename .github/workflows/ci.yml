@@ -143,6 +143,9 @@ jobs:
         working-directory: server
     env:
       NOMBA_SANDBOX_VA_IDENTIFIERS: ${{ secrets.NOMBA_SANDBOX_VA_IDENTIFIERS }}
+      # Scripts import config/env only for Nomba — placeholders if that changes.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      REDIS_URL: redis://localhost:6379
     steps:
       - name: Checkout
         uses: actions/checkout@v4
