@@ -19,7 +19,9 @@
     "typecheck": "tsc --noEmit",
     "test:nomba-sandbox": "ts-node --transpile-only scripts/test-nomba-sandbox.ts",
     "test:claim-manual": "ts-node --transpile-only scripts/test-claim.ts",
-    "test:webhook-duplicate": "ts-node --transpile-only scripts/test-webhook-duplicate.ts"
+    "test:webhook-duplicate": "ts-node --transpile-only scripts/test-webhook-duplicate.ts",
+    "print:webhook": "ts-node -r dotenv/config --transpile-only scripts/print-webhook-request.ts --print-only",
+    "simulate:webhook": "ts-node -r dotenv/config --transpile-only scripts/print-webhook-request.ts"
   },
   "keywords": [],
   "author": "",

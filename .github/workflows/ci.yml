@@ -5,7 +5,8 @@ name: CI
 #   NOMBA_WEBHOOK_SECRET, NOMBA_SUB_ACCOUNT_ID
 #   NOMBA_API_BASE_URL, NOMBA_PARENT_ACCOUNT_ID, NOMBA_CLIENT_ID, NOMBA_CLIENT_SECRET
 #   SENTRY_DSN (optional)
-#   NEXT_PUBLIC_API_BASE_URL (frontend build)
+#   NEXT_PUBLIC_API_BASE_URL (optional — direct API URL for local/CI builds)
+#   API_PROXY_TARGET (optional — Vercel server-side proxy to the Express API)
 #
 # Optional (Nomba sandbox job on main): NOMBA_SANDBOX_VA_IDENTIFIERS
 #

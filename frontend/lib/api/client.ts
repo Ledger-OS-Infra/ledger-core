@@ -5,15 +5,21 @@ import { readAccessToken } from '@/lib/auth-storage'
 // URL builder
 // ---------------------------------------------------------------------------
 
-function currentOrigin(): string {
+function apiBaseUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '')
+  if (configured) return configured
+
+  // Same-origin requests — proxied to the API via next.config rewrites when
+  // API_PROXY_TARGET is set on Vercel (or locally for parity testing).
   if (typeof window !== 'undefined') {
     return window.location.origin
   }
-  return 'http://localhost:3050'
+
+  return process.env.API_PROXY_TARGET?.replace(/\/+$/, '') ?? 'http://localhost:3050'
 }
 
 function buildUrl(path: string, query?: QueryParams): string {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '') ?? currentOrigin()
+  const baseUrl = apiBaseUrl()
   const url = new URL(path.startsWith('/') ? path : `/${path}`, baseUrl)
 
   if (query) {

@@ -1,7 +1,9 @@
-import crypto from "crypto";
 import { env } from "../config/env";
+import { signNombaWebhook } from "../nomba/signWebhook";
+import type { NombaWebhookPayload } from "../nomba/verifyWebhookSignature";
 
-const payload = {
+// Edit these values to simulate a payment for your customer / obligation.
+const payload: NombaWebhookPayload = {
   event_type: "payment_success",
   requestId: "req_insomnia_001",
   data: {
@@ -11,43 +13,68 @@ const payload = {
       type: "vact_transfer",
       time: new Date().toISOString(),
       responseCode: "",
-      aliasAccountNumber: "9671300012",
-      aliasAccountName: "Ledger-Core Test/John Doe",
-      aliasAccountReference: "test_va_ref_001",
-      transactionAmount: 5000,
+      aliasAccountNumber: "8560355060",
+      aliasAccountName: "Life on the rock hospitals",
+      aliasAccountReference: "SUB-2026-176",
+      transactionAmount: 15000000,
     },
     customer: {
       senderName: "Jane Sender",
-      bankName: "Test Bank",
+      bankName: "Nombank MFB",
       accountNumber: "0123456789",
     },
   },
 };
 
-const timestamp = Date.now().toString();
-const merchant = payload.data.merchant;
-const transaction = payload.data.transaction;
+const printOnly = process.argv.includes("--print-only");
 
-const hashingPayload = [
-  payload.event_type,
-  payload.requestId,
-  merchant.userId,
-  merchant.walletId,
-  transaction.transactionId,
-  transaction.type,
-  transaction.time,
-  transaction.responseCode,
-  timestamp,
-].join(":");
+async function main() {
+  const { signature, timestamp } = signNombaWebhook(
+    payload,
+    env.nombaWebhookSecret,
+  );
 
-const signature = crypto
-  .createHmac("sha256", env.nombaWebhookSecret)
-  .update(hashingPayload)
-  .digest("base64");
+  const url = `http://localhost:${env.port}${env.nombaWebhookPath}`;
 
-console.log("=== nomba-signature ===");
-console.log(signature);
-console.log("\n=== nomba-timestamp ===");
-console.log(timestamp);
-console.log("\n=== Body (paste into Insomnia JSON body) ===");
-console.log(JSON.stringify(payload, null, 2));
+  console.log("=== nomba-signature ===");
+  console.log(signature);
+  console.log("\n=== nomba-timestamp ===");
+  console.log(timestamp);
+  console.log("\n=== Body ===");
+  console.log(JSON.stringify(payload, null, 2));
+
+  if (printOnly) {
+    console.log("\n(Pass without --print-only to POST this to the API.)");
+    return;
+  }
+
+  console.log(`\n=== Sending webhook to ${url} ===`);
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "nomba-signature": signature,
+      "nomba-timestamp": timestamp,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const body = await res.json();
+  console.log("Status:", res.status);
+  console.log("Response:", body);
+
+  if (!res.ok) {
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log(
+    "\nPayment event accepted. Reconciliation runs async — check the dashboard or reporting API in a few seconds.",
+  );
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});
