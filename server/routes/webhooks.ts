@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import { Router, type Request, type Response } from "express";
 import { env } from "../config/env";
 import { findCustomerByAccountNumber } from "../db/customers";
@@ -25,6 +26,12 @@ webhooksRouter.post(
 
     const payload = req.body as NombaWebhookPayload;
 
+    Sentry.addBreadcrumb({
+      category: "webhook",
+      message: "Payload received",
+      data: { event_type: payload.event_type },
+    });
+
     try {
       const valid = verifyNombaWebhookSignature(
         payload,
@@ -41,6 +48,8 @@ webhooksRouter.post(
       res.status(401).json({ error: "Invalid webhook signature" });
       return;
     }
+
+    Sentry.addBreadcrumb({ category: "webhook", message: "Signature verified" });
 
     const transactionId = payload.data?.transaction?.transactionId;
 
@@ -75,6 +84,12 @@ webhooksRouter.post(
 
     const isNew = await claimEvent(transactionId);
 
+    Sentry.addBreadcrumb({
+      category: "webhook",
+      message: "Event claimed",
+      data: { transaction_id: transactionId, is_new: isNew },
+    });
+
     if (!isNew) {
       res.status(200).json({ received: true, duplicate: true });
       return;
@@ -84,6 +99,12 @@ webhooksRouter.post(
     const customer = accountNumber
       ? await findCustomerByAccountNumber(accountNumber)
       : null;
+
+    Sentry.addBreadcrumb({
+      category: "reconciliation",
+      message: "Customer lookup complete",
+      data: { matched: customer !== null, virtual_account_id: customer?.virtual_account.id ?? null },
+    });
 
     if (!customer) {
       logger.warn(
@@ -107,6 +128,15 @@ webhooksRouter.post(
         receivedAt: new Date(),
       });
     } catch (err) {
+      Sentry.withScope((scope) => {
+        scope.setTag("transaction_id", transactionId);
+        scope.setContext("payment_event", {
+          business_id: customer?.business_id ?? null,
+          virtual_account_id: customer?.virtual_account.id ?? null,
+          is_matched: customer !== null,
+        });
+        Sentry.captureException(err);
+      });
       await releaseEvent(transactionId);
       logger.error(
         { err, transactionId },
