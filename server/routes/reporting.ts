@@ -13,6 +13,7 @@ import {
   listObligationAging,
   listObligationPaymentHistory,
   obligationExists,
+  listBusinessObligationsForExport,
 } from "../db/reporting";
 import { AppError } from "../lib/AppError";
 import {
@@ -32,13 +33,14 @@ import {
   formatPaymentHistoryRow,
 } from "../lib/reporting/format";
 import { agingListQuery, monthlyInflowQuery, paginationQuery, recentListPaginationQuery } from "../lib/schemas/pagination";
-import { businessObligationsListQuery } from "../lib/schemas/obligations";
+import { businessObligationsListQuery, listObligationsQuery } from "../lib/schemas/obligations";
 import {
   requireBusinessMember,
   requireObligationMember,
   requireReportingCustomerMember,
 } from "../middleware/businessAccess";
 import { validate } from "../middleware/validate";
+import { buildObligationsCsv } from "../lib/reporting/csv";
 
 export const reportingRouter = Router();
 
@@ -332,6 +334,32 @@ reportingRouter.get(
           result.pagination,
         ),
       );
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+reportingRouter.get(
+  "/business/:businessId/obligations/export",
+  validate({ params: businessIdParams, query: listObligationsQuery }),
+  requireBusinessMember("businessId"),
+  async (_req, res, next) => {
+    try {
+      const { businessId } = res.locals.params as { businessId: string };
+      const query = res.locals.query as { status?: string; type?: string };
+
+      const rows = await listBusinessObligationsForExport(businessId, {
+        status: query.status,
+        type: query.type,
+      });
+
+      const csv = buildObligationsCsv(rows);
+      const filename = `obligations-${businessId}-${new Date().toISOString().slice(0, 10)}.csv`;
+
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.status(200).send(csv);
     } catch (err) {
       next(err);
     }

@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { ListPagination } from '@/components/list-pagination'
+import { ButtonCustom } from '@/components/ui/button-custom'
 import {
   Select,
   SelectContent,
@@ -25,6 +26,8 @@ import {
 import { AddObligationModal } from '@/components/add-obligation-modal'
 import { useAuth } from '@/hooks/use-auth'
 import { useObligationsQuery } from '@/lib/queries'
+import { reportingClient } from '@/lib/api'
+import { triggerBlobDownload } from '@/lib/download'
 import { formatCurrency } from '@/lib/currency'
 import { formatDate } from '@/lib/date'
 import {
@@ -46,6 +49,7 @@ export default function ObligationsPage() {
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [isExporting, setIsExporting] = useState(false)
 
   const {
     data,
@@ -72,6 +76,24 @@ export default function ObligationsPage() {
   const handleTypeFilterChange = (value: string) => {
     setTypeFilter(value)
     setPage(1)
+  }
+
+  const handleExport = async () => {
+    if (!activeBusinessId) return
+    setIsExporting(true)
+    try {
+      const blob = await reportingClient.exportObligations(activeBusinessId, {
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        type: typeFilter === 'all' ? undefined : typeFilter,
+      })
+      const date = new Date().toISOString().slice(0, 10)
+      triggerBlobDownload(blob, `obligations-${date}.csv`)
+    } catch (err) {
+      console.error(err)
+      // TODO: surface a toast here if you have a notification system
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   return (
@@ -119,6 +141,15 @@ export default function ObligationsPage() {
               </SelectContent>
             </Select>
           </div>
+
+          <ButtonCustom
+            variant="outline"
+            className="ml-auto"
+            onClick={handleExport}
+            disabled={isExporting || !activeBusinessId}
+          >
+            {isExporting ? 'Exporting…' : 'Export CSV'}
+          </ButtonCustom>
         </div>
 
         {isFetching && obligations.length > 0 && (
