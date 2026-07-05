@@ -27,6 +27,8 @@ const samplePayload = {
   },
 };
 
+const sendToApi = process.argv.includes("--send");
+
 function signPayload(
   payload: typeof samplePayload,
   timestamp: string,
@@ -53,7 +55,7 @@ function signPayload(
     .digest("base64");
 }
 
-async function sendWebhook() {
+function printDelivery(label: string) {
   const timestamp = Date.now().toString();
   const signature = signPayload(
     samplePayload,
@@ -61,6 +63,14 @@ async function sendWebhook() {
     env.nombaWebhookSecret,
   );
 
+  console.log(`\n=== ${label} ===`);
+  console.log("nomba-signature:", signature);
+  console.log("nomba-timestamp:", timestamp);
+  console.log("body:", JSON.stringify(samplePayload, null, 2));
+  return { signature, timestamp };
+}
+
+async function sendWebhook(signature: string, timestamp: string) {
   const res = await fetch(
     `http://localhost:${env.port}${env.nombaWebhookPath}`,
     {
@@ -80,9 +90,23 @@ async function sendWebhook() {
 
 async function main() {
   console.log("--- First delivery ---");
-  await sendWebhook();
+  const first = printDelivery("First delivery");
+
   console.log("--- Second delivery (same transactionId) ---");
-  await sendWebhook();
+  const second = printDelivery("Second delivery (duplicate)");
+
+  if (!sendToApi) {
+    console.log(
+      "\n(Dry-run — expected live behaviour: first → { received: true }, second → { received: true, duplicate: true }. Pass --send to hit the API/DB.)",
+    );
+    return;
+  }
+
+  await sendWebhook(first.signature, first.timestamp);
+  await sendWebhook(second.signature, second.timestamp);
 }
 
-main();
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

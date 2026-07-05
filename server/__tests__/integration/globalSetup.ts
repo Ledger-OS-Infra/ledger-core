@@ -1,7 +1,15 @@
 import { execSync } from "node:child_process";
 import path from "node:path";
+import { integrationLive } from "./live";
 
 export default async function globalSetup() {
+  if (!integrationLive()) {
+    console.info(
+      "Integration tests: dry-run mode (console only, no DB/Redis writes). Set INTEGRATION_LIVE=true to run against a database.",
+    );
+    return;
+  }
+
   // CI runs `npm run migrate` in a separate step with service-container URLs.
   if (process.env.CI) {
     return;

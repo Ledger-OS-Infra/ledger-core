@@ -26,15 +26,13 @@ const payload: NombaWebhookPayload = {
   },
 };
 
-const printOnly = process.argv.includes("--print-only");
+const sendToApi = process.argv.includes("--send");
 
-async function main() {
+function printSignedRequest() {
   const { signature, timestamp } = signNombaWebhook(
     payload,
     env.nombaWebhookSecret,
   );
-
-  const url = `http://localhost:${env.port}${env.nombaWebhookPath}`;
 
   console.log("=== nomba-signature ===");
   console.log(signature);
@@ -43,11 +41,20 @@ async function main() {
   console.log("\n=== Body ===");
   console.log(JSON.stringify(payload, null, 2));
 
-  if (printOnly) {
-    console.log("\n(Pass without --print-only to POST this to the API.)");
+  return { signature, timestamp };
+}
+
+async function main() {
+  const { signature, timestamp } = printSignedRequest();
+
+  if (!sendToApi) {
+    console.log(
+      "\n(Dry-run — nothing sent to the API/DB. Pass --send to POST to the running server.)",
+    );
     return;
   }
 
+  const url = `http://localhost:${env.port}${env.nombaWebhookPath}`;
   console.log(`\n=== Sending webhook to ${url} ===`);
 
   const res = await fetch(url, {

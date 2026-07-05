@@ -35,6 +35,12 @@ export const env = {
   authRequireEmailVerification:
     process.env.AUTH_REQUIRE_EMAIL_VERIFICATION !== "false",
 
+  /** Print emails to console instead of SMTP (test runs and MAIL_DRY_RUN=true). */
+  mailDryRun:
+    process.env.NODE_ENV === "test" || process.env.MAIL_DRY_RUN === "true",
+  /** Force real SMTP even when mailDryRun would apply (e.g. manual send check). */
+  mailSend: process.env.MAIL_SEND === "true",
+
   nombaSubAccountId: required("NOMBA_SUB_ACCOUNT_ID"),
 };
 

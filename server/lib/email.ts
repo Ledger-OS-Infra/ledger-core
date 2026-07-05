@@ -8,7 +8,35 @@ interface SendEmailInput {
   html: string;
 }
 
+function shouldSendEmail(): boolean {
+  if (env.mailSend) return true;
+  return !env.mailDryRun;
+}
+
+function extractActionLink(html: string): string | undefined {
+  const match = html.match(/href="([^"]+)"/);
+  return match?.[1];
+}
+
+function printDryRunEmail(input: SendEmailInput): void {
+  const link = extractActionLink(input.html);
+
+  console.log("\n=== Email (dry-run — not sent) ===");
+  console.log(`To:      ${input.to}`);
+  console.log(`From:    ${env.emailFrom}`);
+  console.log(`Subject: ${input.subject}`);
+  if (link) {
+    console.log(`Link:    ${link}`);
+  }
+  console.log("================================\n");
+}
+
 async function sendEmail(input: SendEmailInput): Promise<void> {
+  if (!shouldSendEmail()) {
+    printDryRunEmail(input);
+    return;
+  }
+
   try {
     const info = await mailer.sendMail({
       from: env.emailFrom,
