@@ -27,6 +27,9 @@ describe("API integration (Postgres + Redis)", () => {
   let businessId: string;
   let customerId: string;
   const accountNumber = `811234${runId.slice(0, 4)}`;
+  const obligationDueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
 
   beforeAll(async () => {
     await startReconciliationWorker();
@@ -90,7 +93,7 @@ describe("API integration (Postgres + Redis)", () => {
       .send({
         type: "INVOICE",
         amount: 500_000,
-        due_date: "2026-07-01",
+        due_date: obligationDueDate,
         reference_code: `INV-CI-${runId}`,
       });
 
