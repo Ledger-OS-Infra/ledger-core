@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import type { NombaClientConfig } from "../nomba/types";
+import { nombaConfig } from "./nombaEnv";
 
 dotenv.config();
 
@@ -44,10 +44,4 @@ export const env = {
   nombaSubAccountId: required("NOMBA_SUB_ACCOUNT_ID"),
 };
 
-export const nombaConfig: NombaClientConfig = {
-  baseUrl: required("NOMBA_API_BASE_URL"),
-  parentAccountId: required("NOMBA_PARENT_ACCOUNT_ID"),
-  subAccountId: required("NOMBA_SUB_ACCOUNT_ID"),
-  clientId: required("NOMBA_CLIENT_ID"),
-  clientSecret: required("NOMBA_CLIENT_SECRET"),
-};
+export { nombaConfig };

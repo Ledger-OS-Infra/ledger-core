@@ -1,4 +1,4 @@
-import { nombaConfig } from "../config/env";
+import { nombaConfig } from "../config/nombaEnv";
 import { NombaAuthService } from "./auth";
 import { NombaHttpClient } from "./httpClient";
 import type {
