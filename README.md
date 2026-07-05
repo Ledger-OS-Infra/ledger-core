@@ -54,9 +54,9 @@ Ledger-Core is a reconciliation infrastructure layer that:
 ledger-core/
 ├── server/                # Express API and reconciliation engine
 │   ├── nomba/             # Nomba API client, auth, webhook verification
-│   ├── db/                # Knex migrations, seeds, connection pool
+│   ├── db/                # Knex migrations, connection pool
 │   │   ├── migrations/    # Schema and reporting view definitions
-│   │   └── seeds/         # Dev seed data (invoice + subscription scenarios)
+│   │   └── seeds/         # Optional legacy demo data (not used in default setup)
 │   ├── routes/            # Webhook handler, reporting endpoints
 │   ├── middleware/        # Error handling, request logging, validation
 │   ├── lib/               # AppError, logger, param helpers
@@ -113,13 +113,13 @@ Wait until Postgres shows `healthy`:
 docker compose ps
 ```
 
-### 4. Run migrations and seed data
+### 4. Run migrations and bootstrap tenant
 
 ```bash
 npm run db:setup --prefix server
 ```
 
-This creates all tables, reporting views, and loads dev seed data (invoice + subscription scenarios from `TASK.md`).
+This creates all tables, reporting views, and one `businesses` row for API testing.
 
 ### 5. Start the server
 
@@ -135,11 +135,18 @@ The API runs on `http://localhost:3050`.
 npm run dev --prefix frontend
 ```
 
-### 7. Verify
+### 7. Create test data via Postman
+
+Import the collection and environment from [`postman/`](postman/), then run **Flow - start from scratch** (see [`postman/README.md`](postman/README.md)).
+
+### 8. Verify
 
 ```bash
+curl http://localhost:3050/health
 curl http://localhost:3050/reporting/business/11111111-1111-1111-1111-111111111101/metrics
 ```
+
+After the Postman flow, use `{{customerId}}` and `{{obligationId}}` from the environment for reporting endpoints.
 
 ---
 
@@ -150,9 +157,13 @@ curl http://localhost:3050/reporting/business/11111111-1111-1111-1111-1111111111
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/reporting/business/:businessId/metrics` | Business-level totals |
-| `GET` | `/reporting/business/:businessId/customers` | Customer balance summaries |
-| `GET` | `/reporting/business/:businessId/aging` | Obligation aging report |
-| `GET` | `/reporting/obligations/:obligationId/payments` | Payment history per obligation |
+| `GET` | `/reporting/business/:businessId/customers` | Customer balance summaries (paginated) |
+| `GET` | `/reporting/business/:businessId/aging` | Obligation aging report (paginated) |
+| `GET` | `/reporting/customers/:customerId` | Customer balance view |
+| `GET` | `/reporting/customers/:customerId/obligations` | Outstanding obligations (paginated) |
+| `GET` | `/reporting/customers/:customerId/ledger` | Ledger history (paginated) |
+| `GET` | `/reporting/obligations/:obligationId` | Obligation detail and aging |
+| `GET` | `/reporting/obligations/:obligationId/payments` | Payment history (paginated) |
 
 ### Webhooks
 
@@ -203,6 +214,8 @@ See [CONTRIBUTION_GUIDE.md](CONTRIBUTION_GUIDE.md) for branch naming, commit con
 | [docs/SCHEMA.md](docs/SCHEMA.md) | Database schema, ER diagram, indexes, append-only policy |
 | [docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md) | Local Docker and Aiven setup, TablePlus guide |
 | [docs/REPORTING_VIEWS.md](docs/REPORTING_VIEWS.md) | Reporting views, example queries, API endpoints |
+| [docs/openapi.yaml](docs/openapi.yaml) | OpenAPI spec for reporting routes |
+| [postman/README.md](postman/README.md) | Postman flows for API-driven manual testing |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Run the full stack in Docker for the hackathon demo |
 
 ---

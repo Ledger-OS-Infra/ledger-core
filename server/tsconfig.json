@@ -20,7 +20,9 @@
     "routes/**/*.ts",
     "nomba/**/*.ts",
     "idempotency/**/*.ts",
-    "redis/**/*.ts"
+    "redis/**/*.ts",
+    "queues/**/*.ts",
+    "workers/**/*.ts"
   ],
   "exclude": [
     "node_modules",

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { recentListPaginationQuery } from "./pagination";
 import {
   OBLIGATION_STATUSES,
   OBLIGATION_TYPES,
@@ -43,6 +44,10 @@ export const listObligationsQuery = z.object({
   status: obligationStatusSchema.optional(),
   type: obligationTypeSchema.optional(),
 });
+
+export const businessObligationsListQuery = recentListPaginationQuery.merge(
+  listObligationsQuery,
+);
 
 export type CreateObligationBody = z.infer<typeof createObligationBody>;
 export type PatchObligationBody = z.infer<typeof patchObligationBody>;

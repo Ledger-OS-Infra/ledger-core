@@ -1,6 +1,6 @@
 # Database setup guide
 
-Steps to run Ledger-Core Postgres locally (Docker) or on Aiven, apply migrations, load dev seed data, and connect with TablePlus.
+Steps to run Ledger-Core Postgres locally (Docker) or on Aiven, apply migrations, bootstrap the tenant row, and create test data via Postman.
 
 ---
 
@@ -81,7 +81,7 @@ docker compose ps
 
 Wait until Postgres shows `healthy` in `docker compose ps`.
 
-### 4. Apply schema and seed data
+### 4. Apply schema and bootstrap tenant
 
 ```bash
 npm run db:setup --prefix server
@@ -90,28 +90,40 @@ npm run db:setup --prefix server
 This runs:
 
 1. `migrate` — creates all core tables and reporting views
-2. `seed` — loads sample business, 2 customers, invoice + subscription scenarios (see [Seed data](#seed-data))
+2. `db:bootstrap` — inserts one `businesses` row (required before `POST /customers`)
 
 Individual commands:
 
 ```bash
-npm run migrate --prefix server    # schema only
-npm run seed --prefix server       # seed only (safe to re-run)
+npm run migrate --prefix server       # schema only
+npm run db:bootstrap --prefix server  # tenant row only
 ```
 
-### 5. Verify
+### 5. Create test data (Postman)
+
+Do **not** load seed data. Use the Postman collection instead — see [`postman/README.md`](../postman/README.md).
 
 ```bash
-docker exec -it ledger-core-postgres psql -U user -d ledger_core -c \
-  "SELECT full_name, total_outstanding, wallet_credit FROM v_customer_balance_summary ORDER BY full_name;"
+npm run dev --prefix server
 ```
 
-Expected output:
+Then run **Flow - start from scratch** in Postman. Steps create customers, obligations, webhooks, and populate `customerId` / `obligationId` in the environment.
 
-| full_name       | total_outstanding | wallet_credit |
-|-----------------|-------------------|---------------|
-| John Doe        | 0                 | 20000         |
-| Raphael Okonkwo | 0                 | 0             |
+### 6. Verify
+
+```bash
+curl http://localhost:3050/health
+
+# After Postman flow step 2+:
+curl "http://localhost:3050/reporting/business/11111111-1111-1111-1111-111111111101/metrics"
+```
+
+In TablePlus, confirm rows exist only for data you created via Postman:
+
+```sql
+SELECT full_name, email FROM customers ORDER BY created_at DESC;
+SELECT reference_code, status, amount FROM payment_obligations ORDER BY created_at DESC;
+```
 
 ---
 
@@ -130,7 +142,7 @@ All commands run from the **repo root**.
 | Postgres shell | `docker exec -it ledger-core-postgres psql -U user -d ledger_core` |
 | Redis CLI | `docker exec -it ledger-core-redis redis-cli` |
 
-After `docker compose down -v`, run `npm run db:setup --prefix server` again to recreate schema and seed.
+After `docker compose down -v`, run `npm run db:setup --prefix server` again, then re-run the Postman flows.
 
 ---
 
@@ -178,7 +190,7 @@ DATABASE_URL=postgresql://avnadmin:YOUR_PASSWORD@your-service.a.aivencloud.com:1
 DATABASE_SSL=true
 ```
 
-Then apply schema and seed against Aiven (Docker not required for this step):
+Then apply schema and bootstrap against Aiven (Docker not required for this step):
 
 ```bash
 npm run db:setup --prefix server
@@ -193,20 +205,11 @@ npm run db:setup --prefix server
 
 ---
 
-## Seed data
+## Test data
 
-Dev seed reproduces the scenarios in `TASK.md` §6:
+All demo data is created through the API using Postman — see [`postman/README.md`](../postman/README.md).
 
-**John Doe — invoice business**
-
-- Invoice ₦150,000 → partial ₦70,000 → final ₦100,000 payment
-- Invoice marked **PAID**; ₦20,000 overpayment in wallet
-
-**Raphael Okonkwo — DSTV-style subscription**
-
-- Monthly ₦6,000 MBU (June + July)
-- Partial ₦4,400 on June → FIFO clearance with ₦7,600 payment in July
-- Both obligations **PAID**; wallet balance ₦0
+The `server/db/seeds/dev.ts` script remains in the repo for optional local use (`npm run seed --prefix server`) but is **not** part of the default setup.
 
 ---
 
@@ -223,7 +226,7 @@ Dev seed reproduces the scenarios in `TASK.md` §6:
 | `ledger_entries` | Immutable debit/credit audit trail |
 | `customer_wallets` | Unallocated / overpayment credit |
 
-Reporting view stubs: `v_customer_balance_summary`, `v_obligation_aging`, `v_business_metrics`, `v_obligation_payment_history`.
+Reporting views: `v_customer_balance_summary`, `v_obligation_aging`, `v_business_metrics`, `v_obligation_payment_history`, `v_customer_ledger_history`, `v_obligation_detail`.
 
 Full entity reference, ER diagram, indexes, and append-only policy: [`docs/SCHEMA.md`](./SCHEMA.md).  
 Reporting views and API examples: [`docs/REPORTING_VIEWS.md`](./REPORTING_VIEWS.md).

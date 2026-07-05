@@ -21,7 +21,12 @@ const IDS = {
 } as const;
 
 /**
- * Dev seed reproducing TASK.md §6 flows:
+ * Optional legacy demo seed — reproduces TASK.md §6 John/Raphael scenarios.
+ *
+ * NOT used in the default setup. Create test data via Postman instead
+ * (see postman/README.md). Run manually only if needed:
+ *   npm run seed --prefix server
+ *
  * - John Doe: invoice partial then overpayment (₦20,000 wallet credit)
  * - Raphael: DSTV-style monthly MBU with partial June + FIFO clearance in July
  *

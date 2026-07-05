@@ -12,6 +12,12 @@ import {
   listCustomersQuery,
   updateCustomerBody,
 } from "../lib/schemas/customers";
+import {
+  requireBusinessMemberFromQuery,
+  requireBusinessWriteFromBody,
+  requireCustomerMember,
+  requireCustomerWrite,
+} from "../middleware/businessAccess";
 import { validate } from "../middleware/validate";
 import { getCustomerService } from "../services/customers";
 
@@ -20,6 +26,7 @@ export const customersRouter = Router();
 customersRouter.post(
   "/",
   validate({ body: createCustomerBody }),
+  requireBusinessWriteFromBody("business_id"),
   async (req, res, next) => {
     try {
       const body = req.body as {
@@ -48,6 +55,7 @@ customersRouter.post(
 customersRouter.get(
   "/",
   validate({ query: listCustomersQuery }),
+  requireBusinessMemberFromQuery("business_id"),
   async (_req, res, next) => {
     try {
       const { business_id, account_number } = res.locals.query as {
@@ -62,11 +70,8 @@ customersRouter.get(
       }
 
       const customer = await findCustomerByAccountNumber(account_number);
-      const matchesScope =
-        customer !== null &&
-        (!business_id || customer.business_id === business_id);
 
-      if (!matchesScope) {
+      if (!customer || customer.business_id !== business_id) {
         throw new AppError("Customer not found", 404, "CUSTOMER_NOT_FOUND");
       }
 
@@ -80,6 +85,7 @@ customersRouter.get(
 customersRouter.get(
   "/:id",
   validate({ params: customerIdParams }),
+  requireCustomerMember("id"),
   async (_req, res, next) => {
     try {
       const { id } = res.locals.params as { id: string };
@@ -99,6 +105,7 @@ customersRouter.get(
 customersRouter.patch(
   "/:id",
   validate({ params: customerIdParams, body: updateCustomerBody }),
+  requireCustomerWrite("id"),
   async (req, res, next) => {
     try {
       const { id } = res.locals.params as { id: string };

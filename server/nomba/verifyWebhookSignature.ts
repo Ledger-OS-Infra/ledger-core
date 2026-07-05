@@ -17,8 +17,8 @@ export interface NombaWebhookPayload {
       aliasAccountNumber?: string;
       aliasAccountName?: string;
       aliasAccountReference?: string;
-      /** Transfer amount in kobo (1 NGN = 100 kobo). */
       transactionAmount?: number;
+      narration?: string;
     };
     customer?: {
       senderName?: string;
@@ -41,10 +41,10 @@ export function verifyNombaWebhookSignature(
   const merchant = payload.data?.merchant ?? {};
   const transaction = payload.data?.transaction ?? {};
 
-  let responseCode = transaction.responseCode ?? "";
-  if (responseCode === "null") {
-    responseCode = "";
-  }
+  const responseCode =
+    transaction.responseCode === "null" || !transaction.responseCode
+      ? ""
+      : transaction.responseCode;
 
   const hashingPayload = [
     payload.event_type ?? "",
