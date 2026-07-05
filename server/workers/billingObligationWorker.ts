@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import { Worker } from "bullmq";
 import { generateDueObligations } from "../lib/billing/generateObligations";
 import { logger } from "../lib/logger";
@@ -29,6 +30,12 @@ export async function startBillingObligationWorker(): Promise<Worker> {
   );
 
   worker.on("failed", (job, err) => {
+    Sentry.withScope((scope) => {
+      scope.setTag("job_id", job?.id ?? "unknown");
+      scope.setTag("job_name", job?.name ?? "unknown");
+      scope.setContext("billing_job", { queue: BILLING_OBLIGATION_QUEUE });
+      Sentry.captureException(err);
+    });
     logger.error(
       { err, jobId: job?.id, jobName: job?.name, queue: BILLING_OBLIGATION_QUEUE },
       "Billing obligation job failed",

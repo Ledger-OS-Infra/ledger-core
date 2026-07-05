@@ -1,6 +1,9 @@
+import "./instrument";
 import cors from "cors";
 import express from "express";
+import * as Sentry from "@sentry/node";
 import { env } from "./config/env";
+import { AppError } from "./lib/AppError";
 import { webhooksRouter } from "./routes/webhooks";
 import { reportingRouter } from "./routes/reporting";
 import { obligationsRouter } from "./routes/obligations";
@@ -30,6 +33,9 @@ app.use("/reporting", reportingRouter);
 app.use(billingRouter);
 app.use(obligationsRouter);
 
+Sentry.setupExpressErrorHandler(app, {
+  shouldHandleError: (err) => !(err instanceof AppError),
+});
 app.use(errorHandler);
 
 app.listen(env.port, () => {
