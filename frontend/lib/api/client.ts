@@ -146,6 +146,39 @@ async function apiFetchPaginated<T>(
   }
 }
 
+async function apiFetchBlob(path: string, init?: ApiFetchInit): Promise<Blob> {
+  const authHeaders: Record<string, string> = {}
+  const token = tokenAccessor?.() ?? readAccessToken()
+  if (token) {
+    authHeaders['Authorization'] = `Bearer ${token}`
+  }
+
+  const response = await fetch(buildUrl(path, init?.query), {
+    headers: {
+      ...authHeaders,
+      ...(init?.headers ?? {}),
+    },
+    ...init,
+  })
+
+  if (!response.ok) {
+    let message = `API request failed [${response.status}]`
+    let code: string | undefined
+    try {
+      const body = await response.json() as { error?: { message?: string; code?: string } }
+      message = body.error?.message ?? message
+      code = body.error?.code
+    } catch {
+      // body wasn't JSON
+    }
+    throw new ApiError(message, response.status, code)
+  }
+
+  return response.blob()
+}
+
+
+
 // ---------------------------------------------------------------------------
 // HTTP verb wrapper
 // ---------------------------------------------------------------------------
@@ -177,5 +210,9 @@ export const http = {
 
   delete<T>(path: string, init?: ApiFetchInit) {
     return apiFetch<T>(path, { ...init, method: 'DELETE' })
+  },
+
+  getBlob(path: string, init?: ApiFetchInit) {
+    return apiFetchBlob(path, { ...init, method: 'GET' })
   },
 }

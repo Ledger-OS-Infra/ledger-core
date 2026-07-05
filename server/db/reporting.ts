@@ -485,3 +485,30 @@ export async function obligationExists(obligationId: string): Promise<boolean> {
   );
   return rows[0]?.exists ?? false;
 }
+
+export async function listBusinessObligationsForExport(
+  businessId: string,
+  filters: BusinessObligationsListFilters = {},
+): Promise<ObligationAgingRow[]> {
+  const values: unknown[] = [businessId];
+  let whereClause = "WHERE o.business_id = $1";
+
+  if (filters.status) {
+    values.push(filters.status);
+    whereClause += ` AND o.status = $${values.length}`;
+  }
+
+  if (filters.type) {
+    values.push(filters.type);
+    whereClause += ` AND o.obligation_type = $${values.length}`;
+  }
+
+  const { rows } = await pool.query<ObligationAgingRow>(
+    `${OBLIGATION_LIST_SELECT}
+     ${whereClause}
+     ORDER BY o.due_date ASC, o.created_at ASC`,
+    values,
+  );
+
+  return rows;
+}

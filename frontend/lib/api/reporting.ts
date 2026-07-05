@@ -266,4 +266,14 @@ export const reportingClient = {
       `/reporting/obligations/${encodeURIComponent(obligationId)}/payments`,
     )
   },
+
+  async exportObligations(
+    businessId: string,
+    params: { status?: string; type?: string } = {},
+  ): Promise<Blob> {
+    return http.getBlob(
+      `/reporting/business/${encodeURIComponent(businessId)}/obligations/export`,
+      { query: { status: params.status, type: params.type } },
+    )
+  },
 }
