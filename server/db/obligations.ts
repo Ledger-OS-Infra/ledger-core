@@ -86,6 +86,27 @@ export async function createObligation(
   return formatObligation(rows[0]);
 }
 
+export async function listUnsettledObligationsByCustomer(
+  customerId: string,
+): Promise<PaymentObligationRow[]> {
+  const { rows } = await pool.query<PaymentObligationRow>(
+    `SELECT *
+     FROM payment_obligations
+     WHERE customer_id = $1
+       AND amount_paid < amount
+     ORDER BY due_date ASC, created_at ASC`,
+    [customerId],
+  );
+
+  return rows.map((row) => ({
+    ...row,
+    metadata:
+      typeof row.metadata === "string"
+        ? (JSON.parse(row.metadata) as Record<string, unknown>)
+        : (row.metadata ?? {}),
+  }));
+}
+
 export async function listObligationsByCustomer(
   customerId: string,
   filters: ListObligationsFilters = {},
@@ -104,6 +125,11 @@ export async function listObligationsByCustomer(
     conditions.push(`obligation_type = $${values.length}`);
   }
 
+  if (filters.status) {
+    values.push(filters.status);
+    conditions.push(`status = $${values.length}`);
+  }
+
   const { rows } = await pool.query<PaymentObligationRow>(
     `SELECT *
      FROM payment_obligations
@@ -112,13 +138,35 @@ export async function listObligationsByCustomer(
     values,
   );
 
-  const obligations = rows.map(formatObligation);
+  return rows.map(formatObligation);
+}
 
-  if (!filters.status) {
-    return obligations;
+export async function listRawObligationsByCustomer(
+  customerId: string,
+  filters: ListObligationsFilters = {},
+): Promise<PaymentObligationRow[]> {
+  const conditions = ["customer_id = $1"];
+  const values: Array<string | ObligationType> = [customerId];
+
+  if (filters.type) {
+    values.push(filters.type);
+    conditions.push(`obligation_type = $${values.length}`);
   }
 
-  return obligations.filter((obligation) => obligation.status === filters.status);
+  if (filters.status) {
+    values.push(filters.status);
+    conditions.push(`status = $${values.length}`);
+  }
+
+  const { rows } = await pool.query<PaymentObligationRow>(
+    `SELECT *
+     FROM payment_obligations
+     WHERE ${conditions.join(" AND ")}
+     ORDER BY due_date ASC, created_at ASC`,
+    values,
+  );
+
+  return rows;
 }
 
 export async function getObligationById(

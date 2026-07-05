@@ -46,6 +46,10 @@ export const listCustomersQuery = z
   .refine(
     (value) => value.business_id !== undefined || value.account_number !== undefined,
     { message: "business_id or account_number is required" },
+  )
+  .refine(
+    (value) => !value.account_number || value.business_id !== undefined,
+    { message: "business_id is required when using account_number" },
   );
 
 export type CreateCustomerBody = z.infer<typeof createCustomerBody>;

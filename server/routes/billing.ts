@@ -1,28 +1,39 @@
 import { Router } from "express";
 import {
   createBillingRule,
-  getBillingRuleById,
+  listBillingRulesByBusiness,
   listBillingRulesByCustomer,
 } from "../db/billingRules";
-import { AppError } from "../lib/AppError";
+import { businessIdParams, customerIdParams } from "../lib/params";
+import { createBillingRuleBody } from "../lib/schemas/billing";
 import {
-  generateDueObligations,
-  generateObligationsForRule,
-} from "../lib/billing/generateObligations";
-import { customerIdParams } from "../lib/params";
-import {
-  billingRuleIdParams,
-  createBillingRuleBody,
-  generateDueBody,
-  generateRuleBody,
-} from "../lib/schemas/billing";
+  requireBusinessMember,
+  requireCustomerMember,
+  requireCustomerWrite,
+} from "../middleware/businessAccess";
 import { validate } from "../middleware/validate";
 
 export const billingRouter = Router();
 
+billingRouter.get(
+  "/business/:businessId/billing-rules",
+  validate({ params: businessIdParams }),
+  requireBusinessMember("businessId"),
+  async (_req, res, next) => {
+    try {
+      const { businessId } = res.locals.params as { businessId: string };
+      const rules = await listBillingRulesByBusiness(businessId);
+      res.json({ data: rules });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
 billingRouter.post(
   "/customers/:id/billing-rules",
   validate({ params: customerIdParams, body: createBillingRuleBody }),
+  requireCustomerWrite("id"),
   async (req, res, next) => {
     try {
       const { id: customerId } = res.locals.params as { id: string };
@@ -55,46 +66,12 @@ billingRouter.post(
 billingRouter.get(
   "/customers/:id/billing-rules",
   validate({ params: customerIdParams }),
+  requireCustomerMember("id"),
   async (_req, res, next) => {
     try {
       const { id: customerId } = res.locals.params as { id: string };
       const rules = await listBillingRulesByCustomer(customerId);
       res.json({ data: rules });
-    } catch (err) {
-      next(err);
-    }
-  },
-);
-
-billingRouter.post(
-  "/billing/jobs/generate-due",
-  validate({ body: generateDueBody }),
-  async (req, res, next) => {
-    try {
-      const body = (req.body ?? {}) as { as_of_date?: string };
-      const summary = await generateDueObligations(body.as_of_date);
-      res.json({ data: summary });
-    } catch (err) {
-      next(err);
-    }
-  },
-);
-
-billingRouter.post(
-  "/billing-rules/:ruleId/generate",
-  validate({ params: billingRuleIdParams, body: generateRuleBody }),
-  async (req, res, next) => {
-    try {
-      const { ruleId } = res.locals.params as { ruleId: string };
-      const body = (req.body ?? {}) as { as_of_date?: string };
-
-      const rule = await getBillingRuleById(ruleId);
-      if (!rule) {
-        throw new AppError("Billing rule not found", 404, "BILLING_RULE_NOT_FOUND");
-      }
-
-      const results = await generateObligationsForRule(ruleId, body.as_of_date);
-      res.json({ data: { rule_id: ruleId, results } });
     } catch (err) {
       next(err);
     }

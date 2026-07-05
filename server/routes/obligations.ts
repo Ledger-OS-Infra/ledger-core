@@ -12,6 +12,12 @@ import {
   listObligationsQuery,
   patchObligationBody,
 } from "../lib/schemas/obligations";
+import {
+  requireCustomerMember,
+  requireCustomerWrite,
+  requireObligationMember,
+  requireObligationWrite,
+} from "../middleware/businessAccess";
 import { validate } from "../middleware/validate";
 
 export const obligationsRouter = Router();
@@ -19,6 +25,7 @@ export const obligationsRouter = Router();
 obligationsRouter.post(
   "/customers/:id/obligations",
   validate({ params: customerIdParams, body: createObligationBody }),
+  requireCustomerWrite("id"),
   async (req, res, next) => {
     try {
       const { id: customerId } = res.locals.params as { id: string };
@@ -52,6 +59,7 @@ obligationsRouter.get(
     params: customerIdParams,
     query: listObligationsQuery,
   }),
+  requireCustomerMember("id"),
   async (_req, res, next) => {
     try {
       const { id: customerId } = res.locals.params as { id: string };
@@ -75,6 +83,7 @@ obligationsRouter.get(
 obligationsRouter.get(
   "/obligations/:obligationId",
   validate({ params: obligationIdParams }),
+  requireObligationMember("obligationId"),
   async (_req, res, next) => {
     try {
       const { obligationId } = res.locals.params as { obligationId: string };
@@ -94,6 +103,7 @@ obligationsRouter.get(
 obligationsRouter.patch(
   "/obligations/:obligationId",
   validate({ params: obligationIdParams, body: patchObligationBody }),
+  requireObligationWrite("obligationId"),
   async (req, res, next) => {
     try {
       const { obligationId } = res.locals.params as { obligationId: string };

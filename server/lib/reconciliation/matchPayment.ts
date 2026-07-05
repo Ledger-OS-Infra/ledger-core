@@ -32,7 +32,7 @@ function matchExact(
 
   if (matches.length === 0) return null;
 
-  return matches.sort(
+  return [...matches].sort(
     (a, b) =>
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   )[0];
@@ -43,7 +43,7 @@ function matchFifo(
 ): PaymentObligationRow | null {
   if (obligations.length === 0) return null;
 
-  return obligations.sort(
+  return [...obligations].sort(
     (a, b) =>
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   )[0];
@@ -56,7 +56,10 @@ export function matchPayment(
 ): MatchResult | null {
   const open = obligations.filter(
     (obligation) =>
-      obligation.status === "UNPAID" || obligation.status === "PARTIAL",
+      obligation.status === "UNPAID" ||
+      obligation.status === "PARTIAL" ||
+      obligation.status === "OVERDUE" ||
+      getOutstanding(obligation) > 0,
   );
 
   if (open.length === 0) return null;

@@ -1,4 +1,3 @@
-// frontend/app/auth/forgot-password/page.tsx
 'use client'
 
 import { useState } from 'react'
@@ -7,6 +6,7 @@ import { FormInput } from '@/components/ui/form-input'
 import { ButtonCustom } from '@/components/ui/button-custom'
 import { FadeIn } from '@/components/ui/fade-in'
 import { useFormValidation, FormErrors } from '@/hooks/use-form-validation'
+import { authClient } from '@/lib/api/auth'
 import Link from 'next/link'
 
 interface ForgotPasswordFormValues {
@@ -50,11 +50,15 @@ export default function ForgotPasswordPage() {
 
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await authClient.forgotPassword(formData.email)
       setIsSubmitted(true)
+    } catch {
+      // Always show success to prevent email enumeration
+      setIsSubmitted(true)
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
   }
 
   if (isSubmitted) {

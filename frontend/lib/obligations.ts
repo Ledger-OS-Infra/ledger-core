@@ -11,6 +11,31 @@ export enum ObligationStatus {
   OVERDUE = 'OVERDUE',
 }
 
+export const OBLIGATION_TYPES = [
+  'INVOICE',
+  'SUBSCRIPTION',
+  'FEE',
+  'LEVY',
+  'CUSTOM',
+] as const
+
+export type ObligationType = (typeof OBLIGATION_TYPES)[number]
+
+export function obligationStatusVariant(
+  status: string,
+): 'success' | 'warning' | 'danger' | 'default' {
+  switch (status.toUpperCase()) {
+    case ObligationStatus.PAID:
+      return 'success'
+    case ObligationStatus.PARTIAL:
+      return 'warning'
+    case ObligationStatus.OVERDUE:
+      return 'danger'
+    default:
+      return 'default'
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Aging bucket types
 // ---------------------------------------------------------------------------

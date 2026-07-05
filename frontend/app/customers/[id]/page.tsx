@@ -1,28 +1,111 @@
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
+import { useParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { StatBlock } from '@/components/stat-block'
-import { LedgerEntryComponent } from '@/components/ledger-entry'
+import { useCustomerDetailQuery } from '@/lib/queries'
 import { formatCurrency } from '@/lib/currency'
 import { formatDate } from '@/lib/date'
-import { mockCustomers, mockObligations, mockLedgers } from '@/lib/mock-data'
+import { isLedgerCreditEntry } from '@/lib/ledger'
 import Link from 'next/link'
-import { MdArrowBack } from 'react-icons/md'
+import { MdArrowBack, MdCheckCircle, MdContentCopy } from 'react-icons/md'
 
-interface CustomerDetailProps {
-  params: Promise<{
-    id: string
-  }>
+function VirtualAccountCopy({
+  accountNumber,
+  bankName,
+}: {
+  accountNumber: string
+  bankName: string
+}) {
+  const [copied, setCopied] = useState(false)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [])
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(accountNumber)
+      setCopied(true)
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      timeoutRef.current = setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Clipboard denied — no-op.
+    }
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className="text-sm text-muted-foreground font-mono">{accountNumber}</span>
+      <span className="text-xs text-muted-foreground">{bankName}</span>
+      <button
+        type="button"
+        onClick={handleCopy}
+        title={copied ? 'Copied!' : 'Copy account number'}
+        aria-label={copied ? 'Copied' : 'Copy account number'}
+        className={`rounded p-0.5 transition-colors ${
+          copied
+            ? 'text-green-600 dark:text-green-400'
+            : 'text-muted-foreground hover:text-foreground'
+        }`}
+      >
+        {copied ? (
+          <MdCheckCircle className="h-3.5 w-3.5" />
+        ) : (
+          <MdContentCopy className="h-3.5 w-3.5" />
+        )}
+      </button>
+    </span>
+  )
 }
 
-export default async function CustomerDetailPage({ params }: CustomerDetailProps) {
-  const { id } = await params
-  const customer = mockCustomers.find((c) => c.id === id)
+function obligationStatusVariant(status: string): 'success' | 'warning' | 'danger' | 'default' {
+  switch (status.toUpperCase()) {
+    case 'PAID':
+      return 'success'
+    case 'PARTIAL':
+      return 'warning'
+    case 'OVERDUE':
+      return 'danger'
+    default:
+      return 'default'
+  }
+}
 
-  if (!customer) {
+export default function CustomerDetailPage() {
+  const params = useParams<{ id: string }>()
+  const id = params.id
+
+  const { data, isLoading, isFetching, isError } = useCustomerDetailQuery(id)
+
+  if (isLoading && !data) {
     return (
-      <div className="p-8">
-        <Link href="/customers" className="flex items-center gap-2 text-sm text-primary hover:underline mb-4">
+      <div className="p-8 mx-auto">
+        <Link
+          href="/customers"
+          className="flex items-center gap-2 text-sm text-primary hover:underline mb-6"
+        >
+          <MdArrowBack className="h-4 w-4" />
+          Back to Customers
+        </Link>
+        <p className="text-muted-foreground">Loading customer…</p>
+      </div>
+    )
+  }
+
+  if (isError && !data) {
+    return (
+      <div className="p-8  mx-auto">
+        <Link
+          href="/customers"
+          className="flex items-center gap-2 text-sm text-primary hover:underline mb-4"
+        >
           <MdArrowBack className="h-4 w-4" />
           Back to Customers
         </Link>
@@ -31,35 +114,36 @@ export default async function CustomerDetailPage({ params }: CustomerDetailProps
     )
   }
 
-  const customerObligations = mockObligations.filter(
-    (o) => o.customerId === customer.id
-  )
-  const customerLedger = mockLedgers
-    .filter((l) => l.customerId === customer.id)
-    .sort((a, b) => b.date.getTime() - a.date.getTime())
+  const { record, balance, obligations, ledger } = data!
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <Link href="/customers" className="flex items-center gap-2 text-sm text-primary hover:underline mb-6">
+    <div className="p-8  mx-auto">
+      <Link
+        href="/customers"
+        className="flex items-center gap-2 text-sm text-primary hover:underline mb-6"
+      >
         <MdArrowBack className="h-4 w-4" />
         Back to Customers
       </Link>
 
+      {isFetching && (
+        <p className="mb-4 text-xs text-muted-foreground">Refreshing…</p>
+      )}
+
       {/* Header */}
       <div className="mb-8 flex items-start gap-4">
-        <Avatar name={customer.full_name} size="lg" />
+        <Avatar name={record.full_name} size="lg" />
         <div className="flex-1">
-          <h1 className="text-3xl font-semibold">{customer.full_name}</h1>
-          <p className="text-muted-foreground mt-1">{customer.email}</p>
-          <div className="mt-3 flex items-center gap-2">
-            <Badge
-              variant={customer.status === 'ACTIVE' ? 'success' : 'danger'}
-            >
-              {customer.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+          <h1 className="text-3xl font-semibold">{record.full_name}</h1>
+          <p className="text-muted-foreground mt-1">{record.email ?? '—'}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Badge variant={record.status === 'ACTIVE' ? 'success' : 'danger'}>
+              {record.status === 'ACTIVE' ? 'Active' : 'Inactive'}
             </Badge>
-            <span className="text-sm text-muted-foreground font-mono">
-              {customer.virtual_account.account_number}
-            </span>
+            <VirtualAccountCopy
+              accountNumber={record.virtual_account.account_number}
+              bankName={record.virtual_account.bank_name}
+            />
           </div>
         </div>
       </div>
@@ -68,25 +152,29 @@ export default async function CustomerDetailPage({ params }: CustomerDetailProps
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <StatBlock
           label="Outstanding"
-          value={formatCurrency(customer.outstanding)}
+          value={formatCurrency(balance.totalOutstanding)}
         />
         <StatBlock
           label="Wallet Credit"
-          value={formatCurrency(customer.walletCredit)}
+          value={formatCurrency(balance.walletCredit)}
         />
         <StatBlock
-          label="Last Payment"
-          value={formatDate(customer.lastPayment)}
+          label="Net Balance"
+          value={formatCurrency(balance.netBalance)}
         />
       </div>
 
       {/* Obligations */}
-      {customerObligations.length > 0 && (
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Obligations</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Outstanding Obligations</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {obligations.length === 0 ? (
+            <p className="px-6 py-8 text-center text-sm text-muted-foreground">
+              No outstanding obligations
+            </p>
+          ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -97,6 +185,9 @@ export default async function CustomerDetailPage({ params }: CustomerDetailProps
                     <th className="px-6 py-3 text-right font-semibold text-xs uppercase text-muted-foreground">
                       Amount
                     </th>
+                    <th className="px-6 py-3 text-right font-semibold text-xs uppercase text-muted-foreground">
+                      Outstanding
+                    </th>
                     <th className="px-6 py-3 text-left font-semibold text-xs uppercase text-muted-foreground">
                       Due Date
                     </th>
@@ -106,34 +197,31 @@ export default async function CustomerDetailPage({ params }: CustomerDetailProps
                   </tr>
                 </thead>
                 <tbody>
-                  {customerObligations.map((obligation) => (
+                  {obligations.map((obligation) => (
                     <tr
-                      key={obligation.id}
+                      key={obligation.obligationId}
                       className="border-b border-border hover:bg-muted/30 transition-colors"
                     >
                       <td className="px-6 py-4">
-                        <div>
-                          <p className="font-medium capitalize">{obligation.type}</p>
+                        <p className="font-medium capitalize">
+                          {obligation.obligationType.toLowerCase()}
+                        </p>
+                        {obligation.referenceCode && (
                           <p className="text-xs text-muted-foreground">
-                            {obligation.description}
+                            {obligation.referenceCode}
                           </p>
-                        </div>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-right font-mono">
                         {formatCurrency(obligation.amount)}
                       </td>
-                      <td className="px-6 py-4">
-                        {formatDate(obligation.dueDate)}
+                      <td className="px-6 py-4 text-right font-mono">
+                        {formatCurrency(obligation.outstanding)}
                       </td>
+                      <td className="px-6 py-4">{formatDate(obligation.dueDate)}</td>
                       <td className="px-6 py-4">
                         <Badge
-                          variant={
-                            obligation.status === 'paid'
-                              ? 'success'
-                              : obligation.status === 'partial'
-                                ? 'warning'
-                                : 'danger'
-                          }
+                          variant={obligationStatusVariant(obligation.status)}
                           size="sm"
                         >
                           {obligation.status}
@@ -144,25 +232,55 @@ export default async function CustomerDetailPage({ params }: CustomerDetailProps
                 </tbody>
               </table>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
       {/* Ledger */}
-      {customerLedger.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Ledger</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
+      <Card>
+        <CardHeader>
+          <CardTitle>Ledger</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {ledger.length === 0 ? (
+            <p className="px-6 py-8 text-center text-sm text-muted-foreground">
+              No ledger activity yet
+            </p>
+          ) : (
             <div className="divide-y divide-border">
-              {customerLedger.map((entry) => (
-                <LedgerEntryComponent key={entry.id} entry={entry} />
+              {ledger.map((entry) => (
+                <div
+                  key={entry.ledgerEntryId}
+                  className="flex items-start justify-between px-6 py-4"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm">{entry.description}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {entry.createdAt ? formatDate(entry.createdAt) : ''}
+                      {entry.senderName ? ` • ${entry.senderName}` : ''}
+                    </p>
+                  </div>
+                  <div className="text-right ml-4">
+                    <p
+                      className={`font-mono text-sm font-medium ${
+                        isLedgerCreditEntry(entry.entryType)
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-foreground'
+                      }`}
+                    >
+                      {isLedgerCreditEntry(entry.entryType) ? '+' : '-'}
+                      {formatCurrency(entry.amount)}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Bal: {formatCurrency(entry.balanceAfter)}
+                    </p>
+                  </div>
+                </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

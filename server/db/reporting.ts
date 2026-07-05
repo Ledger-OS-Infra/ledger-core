@@ -50,6 +50,11 @@ export interface AgingSummaryRow {
   total_outstanding: string;
 }
 
+export interface MonthlyInflowRow {
+  month: string;
+  total: string;
+}
+
 export interface ObligationDetailRow {
   obligation_id: string;
   business_id: string;
@@ -109,9 +114,55 @@ export interface CustomerLedgerHistoryRow {
   payment_received_at: Date | null;
 }
 
+export interface BusinessPaymentEventRow {
+  id: string;
+  business_id: string;
+  amount: string;
+  sender_name: string | null;
+  is_matched: boolean;
+  received_at: Date;
+  customer_id: string | null;
+  customer_name: string | null;
+}
+
 export interface AgingListFilters {
   bucket?: string;
 }
+
+export interface BusinessObligationsListFilters {
+  status?: string;
+  type?: string;
+}
+
+export interface BusinessPaymentEventsFilters {
+  matchStatus?: "matched" | "unmatched";
+}
+
+const OBLIGATION_LIST_SELECT = `
+  SELECT
+    o.id AS obligation_id,
+    o.business_id,
+    o.customer_id,
+    c.full_name AS customer_name,
+    o.obligation_type,
+    o.reference_code,
+    o.amount,
+    o.amount_paid,
+    (o.amount - o.amount_paid)::BIGINT AS outstanding,
+    o.due_date,
+    o.status,
+    GREATEST(CURRENT_DATE - o.due_date, 0)::INT AS days_overdue,
+    CASE
+      WHEN o.status = 'PAID' THEN 'paid'
+      WHEN o.due_date >= CURRENT_DATE THEN 'current'
+      WHEN CURRENT_DATE - o.due_date <= 30 THEN '1_30_days'
+      WHEN CURRENT_DATE - o.due_date <= 60 THEN '31_60_days'
+      WHEN CURRENT_DATE - o.due_date <= 90 THEN '61_90_days'
+      ELSE '90_plus_days'
+    END AS aging_bucket
+  FROM payment_obligations o
+  JOIN customers c ON c.id = o.customer_id
+`;
 
 async function countRows(
   tableOrView: string,
@@ -258,6 +309,105 @@ export async function listObligationAging(
   };
 }
 
+export async function listBusinessObligations(
+  businessId: string,
+  pagination: PaginationInput,
+  filters: BusinessObligationsListFilters = {},
+): Promise<PaginatedResult<ObligationAgingRow>> {
+  const { page, limit, offset } = resolvePagination(pagination);
+  const values: unknown[] = [businessId];
+  let whereClause = "WHERE o.business_id = $1";
+
+  if (filters.status) {
+    values.push(filters.status);
+    whereClause += ` AND o.status = $${values.length}`;
+  }
+
+  if (filters.type) {
+    values.push(filters.type);
+    whereClause += ` AND o.obligation_type = $${values.length}`;
+  }
+
+  const { rows: countRowsResult } = await pool.query<{ total: string }>(
+    `SELECT COUNT(*)::TEXT AS total
+     FROM payment_obligations o
+     JOIN customers c ON c.id = o.customer_id
+     ${whereClause}`,
+    values,
+  );
+  const total = Number(countRowsResult[0]?.total ?? 0);
+
+  values.push(limit, offset);
+  const limitParam = values.length - 1;
+  const offsetParam = values.length;
+
+  const { rows } = await pool.query<ObligationAgingRow>(
+    `${OBLIGATION_LIST_SELECT}
+     ${whereClause}
+     ORDER BY o.created_at DESC
+     LIMIT $${limitParam} OFFSET $${offsetParam}`,
+    values,
+  );
+
+  return {
+    items: rows,
+    pagination: buildPaginationMeta(total, page, limit),
+  };
+}
+
+export async function listBusinessPaymentEvents(
+  businessId: string,
+  pagination: PaginationInput,
+  filters: BusinessPaymentEventsFilters = {},
+): Promise<PaginatedResult<BusinessPaymentEventRow>> {
+  const { page, limit, offset } = resolvePagination(pagination);
+  const tableConditions = ["business_id = $1"];
+  const joinConditions = ["pe.business_id = $1"];
+  const values: unknown[] = [businessId];
+
+  if (filters.matchStatus === "matched") {
+    tableConditions.push("is_matched = TRUE");
+    joinConditions.push("pe.is_matched = TRUE");
+  }
+
+  if (filters.matchStatus === "unmatched") {
+    tableConditions.push("is_matched = FALSE");
+    joinConditions.push("pe.is_matched = FALSE");
+  }
+
+  const tableWhereClause = `WHERE ${tableConditions.join(" AND ")}`;
+  const joinWhereClause = `WHERE ${joinConditions.join(" AND ")}`;
+  const total = await countRows("payment_events", tableWhereClause, values);
+
+  values.push(limit, offset);
+  const limitParam = values.length - 1;
+  const offsetParam = values.length;
+
+  const { rows } = await pool.query<BusinessPaymentEventRow>(
+    `SELECT
+       pe.id,
+       pe.business_id,
+       pe.amount,
+       pe.sender_name,
+       pe.is_matched,
+       pe.received_at,
+       c.id AS customer_id,
+       c.full_name AS customer_name
+     FROM payment_events pe
+     LEFT JOIN virtual_accounts va ON va.id = pe.virtual_account_id
+     LEFT JOIN customers c ON c.id = va.customer_id
+     ${joinWhereClause}
+     ORDER BY pe.received_at DESC NULLS LAST, pe.created_at DESC
+     LIMIT $${limitParam} OFFSET $${offsetParam}`,
+    values,
+  );
+
+  return {
+    items: rows,
+    pagination: buildPaginationMeta(total, page, limit),
+  };
+}
+
 export async function listAgingSummary(
   businessId: string,
 ): Promise<AgingSummaryRow[]> {
@@ -267,6 +417,24 @@ export async function listAgingSummary(
      WHERE business_id = $1
      ORDER BY aging_bucket`,
     [businessId],
+  );
+  return rows;
+}
+
+export async function listMonthlyInflow(
+  businessId: string,
+  months = 6,
+): Promise<MonthlyInflowRow[]> {
+  const { rows } = await pool.query<MonthlyInflowRow>(
+    `SELECT
+       to_char(date_trunc('month', pe.received_at), 'YYYY-MM') AS month,
+       COALESCE(SUM(pe.amount), 0)::TEXT AS total
+     FROM payment_events pe
+     WHERE pe.business_id = $1
+       AND pe.received_at >= date_trunc('month', CURRENT_DATE) - ($2::int - 1) * interval '1 month'
+     GROUP BY date_trunc('month', pe.received_at)
+     ORDER BY date_trunc('month', pe.received_at) ASC`,
+    [businessId, months],
   );
   return rows;
 }

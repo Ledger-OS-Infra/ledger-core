@@ -1,8 +1,10 @@
 import type {
   AgingSummaryRow,
   BusinessMetricsRow,
+  BusinessPaymentEventRow,
   CustomerBalanceRow,
   CustomerLedgerHistoryRow,
+  MonthlyInflowRow,
   ObligationAgingRow,
   ObligationDetailRow,
   ObligationPaymentHistoryRow,
@@ -47,6 +49,19 @@ export function formatCustomerBalance(row: CustomerBalanceRow) {
   };
 }
 
+export function formatBusinessPaymentEvent(row: BusinessPaymentEventRow) {
+  return {
+    id: row.id,
+    business_id: row.business_id,
+    customer_id: row.customer_id,
+    customer_name: row.customer_name,
+    amount: amount(row.amount),
+    sender_name: row.sender_name,
+    is_matched: row.is_matched,
+    received_at: isoDate(row.received_at),
+  };
+}
+
 export function formatObligationAging(row: ObligationAgingRow) {
   return {
     obligation_id: row.obligation_id,
@@ -71,6 +86,13 @@ export function formatAgingSummary(row: AgingSummaryRow) {
     aging_bucket: row.aging_bucket,
     obligation_count: row.obligation_count,
     total_outstanding: amount(row.total_outstanding),
+  };
+}
+
+export function formatMonthlyInflow(row: MonthlyInflowRow) {
+  return {
+    month: row.month,
+    total: amount(row.total),
   };
 }
 

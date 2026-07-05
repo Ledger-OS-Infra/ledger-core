@@ -1,137 +1,92 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatBlock } from "@/components/stat-block";
 import { Badge } from "@/components/ui/badge";
-import { reportingClient } from "@/lib/api";
+import { useAuth } from "@/hooks/use-auth";
+import { useDashboardQuery } from "@/lib/queries";
 import { formatCurrency, formatCurrencyShort } from "@/lib/currency";
-import {
-  mockCustomers,
-  mockObligations,
-  mockTransactions,
-} from "@/lib/mock-data";
-import { calculateAgingBuckets } from "@/lib/obligations";
 import { MdWarning } from "react-icons/md";
 
-const BUSINESS_ID = "demo-business";
+const dateFormatter = new Intl.DateTimeFormat("en-NG", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+
+function formatDate(iso: string | null): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? "" : dateFormatter.format(date);
+}
+
+// Aging buckets emitted by the backend (v_obligation_aging) mapped onto the
+// four display buckets shown here. `current` (not yet due) folds into 0-30.
+const AGING_ROWS = [
+  { label: "0-30 days", keys: ["current", "1_30_days"], color: "bg-green-500" },
+  { label: "31-60 days", keys: ["31_60_days"], color: "bg-yellow-500" },
+  { label: "61-90 days", keys: ["61_90_days"], color: "bg-orange-500" },
+  { label: "90+ days", keys: ["90_plus_days"], color: "bg-red-500" },
+] as const;
 
 export default function DashboardPage() {
-  const {
-    data: dashboardData,
-    isPending,
-    isError,
-  } = useQuery({
-    queryKey: ["dashboard", BUSINESS_ID],
-    queryFn: async () => {
-      try {
-        const [metrics, aging] = await Promise.all([
-          reportingClient.getBusinessMetrics(BUSINESS_ID),
-          reportingClient.listAging(BUSINESS_ID),
-        ]);
+  const { activeBusinessId, activeBusinessName } = useAuth();
 
-        return {
-          metrics,
-          agingSummary: aging.summary,
-        };
-      } catch {
-        // Fallback: derive metrics from mock data when the API is unavailable
-        return {
-          metrics: {
-            totalOutstanding: mockCustomers.reduce(
-              (sum, customer) => sum + customer.outstanding,
-              0,
-            ),
-            overdueAmount: mockCustomers
-              .filter((customer) => customer.status === "INACTIVE")
-              .reduce((sum, customer) => sum + customer.outstanding, 0),
-            overdueObligationCount: mockCustomers.filter(
-              (customer) => customer.status === "INACTIVE",
-            ).length,
-            totalInflow: 0,
-            totalWalletCredit: mockCustomers.reduce(
-              (sum, customer) => sum + customer.walletCredit,
-              0,
-            ),
-          },
-          agingSummary: { "0-30": 0, "31-60": 0, "61-90": 0, "90+": 0 },
-        };
-      }
-    },
-    staleTime: 60_000,
-  });
+  const { data, isLoading, isFetching, isError } = useDashboardQuery(activeBusinessId);
 
-  // Fallback mirrors the shape above when data hasn't loaded yet
-  const dashboardMetrics = dashboardData?.metrics ?? {
-    totalOutstanding: mockCustomers.reduce(
-      (sum, customer) => sum + customer.outstanding,
-      0,
-    ),
-    overdueAmount: mockCustomers
-      .filter((customer) => customer.status === "INACTIVE")
-      .reduce((sum, customer) => sum + customer.outstanding, 0),
-    overdueObligationCount: mockCustomers.filter(
-      (customer) => customer.status === "INACTIVE",
-    ).length,
-    totalInflow: 0,
-    totalWalletCredit: mockCustomers.reduce(
-      (sum, customer) => sum + customer.walletCredit,
-      0,
-    ),
-  };
+  const metrics = data?.metrics;
+  const transactions = data?.transactions ?? [];
+  const customers = data?.customers ?? [];
+  const agingSummary = data?.agingSummary ?? {};
 
-  // Calculate metrics
-  const thisMonth = new Date();
-  const thisMonthStart = new Date(
-    thisMonth.getFullYear(),
-    thisMonth.getMonth(),
-    1,
+  const totalInflow = metrics?.totalInflow ?? 0;
+  const totalOutstanding = metrics?.totalOutstanding ?? 0;
+  const totalOverdue = metrics?.overdueAmount ?? 0;
+  const overdueCount = metrics?.overdueObligationCount ?? 0;
+
+  const activeCustomers = customers.filter(
+    (customer) => customer.status === "ACTIVE",
+  ).length;
+
+  const unmatchedTransactions = transactions.filter(
+    (transaction) => !transaction.isMatched,
   );
 
-  const inflowThisMonth = mockTransactions
-  .filter((transaction) => transaction.date >= thisMonthStart)
-  .reduce((sum, transaction) => sum + transaction.amount, 0)
-
-  const totalOutstanding = dashboardMetrics.totalOutstanding;
-  const totalOverdue = dashboardMetrics.overdueAmount;
-  // The API doesn't return a total customer count; use active mock customers as a stand-in
-  const activeCustomers = mockCustomers.filter(
-    (customer) => customer.status === 'ACTIVE'
-  ).length
-  const unmatchedTransactions = mockTransactions.filter(
-    (transaction) => transaction.status === 'unmatched'
-  )
-
-  // Aging buckets — computed via shared utility
-  const agingBuckets = calculateAgingBuckets(mockObligations);
-  const maxAging = Math.max(...Object.values(agingBuckets));
-
-  const recentTransactions = mockTransactions.slice(0, 5);
+  const agingBuckets = AGING_ROWS.map((row) => ({
+    ...row,
+    amount: row.keys.reduce((sum, key) => sum + (agingSummary[key] ?? 0), 0),
+  }));
+  const maxAging = Math.max(0, ...agingBuckets.map((bucket) => bucket.amount));
 
   return (
     <div>
       <PageHeader
-        title="Dashboard"
+        title={activeBusinessName ?? "Dashboard"}
         description="Overview of your financial reconciliation"
       />
 
       {/* Metrics Grid */}
       <div className="px-8 py-6">
-        {isPending && (
+        {isLoading && (
           <div className="mb-4 text-sm text-muted-foreground">
-            Loading live dashboard data…
+            Loading dashboard…
           </div>
         )}
-        {isError && (
-          <div className="mb-4 text-sm text-muted-foreground">
-            Using fallback data while the API is unavailable.
+        {isFetching && data && (
+          <div className="mb-4 text-xs text-muted-foreground">
+            Refreshing…
+          </div>
+        )}
+        {isError && !data && (
+          <div className="mb-4 text-sm text-destructive">
+            Couldn&apos;t load dashboard data. Please try again.
           </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatBlock
-            label="Inflow This Month"
-            value={formatCurrencyShort(inflowThisMonth)}
+            label="Total Inflow"
+            value={formatCurrencyShort(totalInflow)}
           />
           <StatBlock
             label="Outstanding"
@@ -141,9 +96,7 @@ export default function DashboardPage() {
             label="Overdue"
             value={formatCurrencyShort(totalOverdue)}
             description={
-              unmatchedTransactions.length > 0
-                ? `${unmatchedTransactions.length} unmatched`
-                : "All matched"
+              overdueCount > 0 ? `${overdueCount} overdue` : "None overdue"
             }
           />
           <StatBlock label="Active Customers" value={activeCustomers} />
@@ -177,22 +130,20 @@ export default function DashboardPage() {
               </div>
               <CardContent className="p-0">
                 <div className="divide-y divide-border">
-                  {recentTransactions.length === 0 ? (
+                  {transactions.length === 0 ? (
                     <div className="px-6 py-8 text-center text-muted-foreground text-sm">
                       No transactions yet
                     </div>
                   ) : (
-                    recentTransactions.map((transaction) => {
-                      const customer = mockCustomers.find(
-                        (customer) => customer.id === transaction.customerId
-                      )
+                    transactions.map((transaction) => {
+                      const title =
+                        transaction.customerName ??
+                        transaction.senderName ??
+                        "Unknown sender";
 
-                      const statusVariant =
-                        transaction.status === "matched"
-                          ? "success"
-                          : transaction.status === "unmatched"
-                            ? "danger"
-                            : "warning";
+                      const subtitle = transaction.isMatched
+                        ? `Matched${transaction.receivedAt ? ` • ${formatDate(transaction.receivedAt)}` : ""}`
+                        : `Unmatched — needs review${transaction.receivedAt ? ` • ${formatDate(transaction.receivedAt)}` : ""}`;
 
                       return (
                         <div
@@ -200,11 +151,9 @@ export default function DashboardPage() {
                           className="px-6 py-4 flex items-start justify-between"
                         >
                           <div className="flex-1">
-                            <p className="font-medium text-sm">
-                              {customer?.full_name ?? "Unknown customer"}
-                            </p>
+                            <p className="font-medium text-sm">{title}</p>
                             <p className="text-xs text-muted-foreground mt-1">
-                              {transaction.reasoning}
+                              {subtitle}
                             </p>
                           </div>
                           <div className="text-right ml-4">
@@ -212,11 +161,13 @@ export default function DashboardPage() {
                               {formatCurrency(transaction.amount)}
                             </p>
                             <Badge
-                              variant={statusVariant}
+                              variant={
+                                transaction.isMatched ? "success" : "danger"
+                              }
                               size="sm"
                               className="mt-1"
                             >
-                              {transaction.status}
+                              {transaction.isMatched ? "matched" : "unmatched"}
                             </Badge>
                           </div>
                         </div>
@@ -236,37 +187,21 @@ export default function DashboardPage() {
               </div>
               <CardContent className="p-0">
                 <div className="space-y-4 px-6 py-4">
-                  {(
-                    [
-                      { label: "0-30 days", key: "0-30" },
-                      { label: "31-60 days", key: "31-60" },
-                      { label: "61-90 days", key: "61-90" },
-                      { label: "90+ days", key: "90+" },
-                    ] as const
-                  ).map(({ label, key }) => {
-                    const amount = agingBuckets[key];
+                  {agingBuckets.map((bucket) => {
                     const percentage =
-                      maxAging > 0 ? (amount / maxAging) * 100 : 0;
+                      maxAging > 0 ? (bucket.amount / maxAging) * 100 : 0;
 
                     return (
-                      <div key={key}>
+                      <div key={bucket.label}>
                         <div className="flex justify-between mb-1">
-                          <p className="text-xs font-medium">{label}</p>
+                          <p className="text-xs font-medium">{bucket.label}</p>
                           <p className="text-xs text-muted-foreground">
-                            {formatCurrencyShort(amount)}
+                            {formatCurrencyShort(bucket.amount)}
                           </p>
                         </div>
                         <div className="h-2 bg-muted rounded overflow-hidden">
                           <div
-                            className={`h-full transition-all ${
-                              key === "0-30"
-                                ? "bg-green-500"
-                                : key === "31-60"
-                                  ? "bg-yellow-500"
-                                  : key === "61-90"
-                                    ? "bg-orange-500"
-                                    : "bg-red-500"
-                            }`}
+                            className={`h-full transition-all ${bucket.color}`}
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
