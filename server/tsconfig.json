@@ -13,6 +13,8 @@
   },
   "include": [
     "index.ts",
+    "app.ts",
+    "instrument.ts",
     "config/**/*.ts",
     "db/**/*.ts",
     "lib/**/*.ts",

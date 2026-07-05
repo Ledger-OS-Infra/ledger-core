@@ -30,6 +30,14 @@ vi.mock("../../queues/reconciliation", () => ({
   enqueueReconciliationJob: vi.fn(),
 }));
 
+vi.mock("@sentry/node", () => ({
+  addBreadcrumb: vi.fn(),
+  withScope: vi.fn((fn: (scope: { setTag: () => void; setContext: () => void }) => void) => {
+    fn({ setTag: vi.fn(), setContext: vi.fn() });
+  }),
+  captureException: vi.fn(),
+}));
+
 import { webhooksRouter } from "../webhooks";
 import { claimEvent } from "../../idempotency/claimEvent";
 import { findCustomerByAccountNumber } from "../../db/customers";

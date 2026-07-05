@@ -14,7 +14,10 @@
     "db:setup": "npm run migrate --prefix server && npm run db:bootstrap --prefix server",
     "dev": "npm run dev --prefix server 2>&1 | npx pino-pretty",
     "start": "npm run dev --prefix frontend",
-    "test": "npm run test --prefix server"
+    "test": "npm run test --prefix server",
+    "typecheck": "npm run typecheck --prefix server && npm run typecheck --prefix frontend",
+    "ci": "npm run typecheck --prefix server && npm run test --prefix server && npm run build --prefix server && npm run lint --prefix frontend && NEXT_PUBLIC_API_BASE_URL=http://localhost:3050 npm run build --prefix frontend",
+    "ci:integration": "npm run test:integration --prefix server"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",

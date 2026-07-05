@@ -14,7 +14,9 @@
     "seed": "knex seed:run --knexfile knexfile.ts",
     "db:setup": "npm run migrate && npm run db:bootstrap",
     "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
     "test:nomba-sandbox": "ts-node --transpile-only scripts/test-nomba-sandbox.ts",
     "test:claim-manual": "ts-node --transpile-only scripts/test-claim.ts",
     "test:webhook-duplicate": "ts-node --transpile-only scripts/test-webhook-duplicate.ts"
