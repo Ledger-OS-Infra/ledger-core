@@ -5,6 +5,7 @@ import type { Express } from "express";
 import { createApp } from "../../app";
 import { pool } from "../../db/pool";
 import { env } from "../../config/env";
+import { redis } from "../../redis/client";
 import { closeReconciliationQueue } from "../../queues/reconciliation";
 import {
   startReconciliationWorker,
@@ -36,6 +37,7 @@ describe("API integration (Postgres + Redis)", () => {
     await stopReconciliationWorker();
     await closeReconciliationQueue();
     await pool.end();
+    await redis.quit();
   });
 
   it("GET /health returns ok", async () => {
