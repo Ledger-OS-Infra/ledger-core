@@ -13,16 +13,9 @@ const nextConfig: NextConfig = {
   async rewrites() {
     if (!apiProxyTarget) return [];
 
+    // Proxy API traffic under /api/* so paths like /customers/[id] stay frontend pages.
     return [
-      { source: "/health", destination: `${apiProxyTarget}/health` },
-      { source: "/auth/:path*", destination: `${apiProxyTarget}/auth/:path*` },
-      { source: "/webhooks/:path*", destination: `${apiProxyTarget}/webhooks/:path*` },
-      { source: "/businesses", destination: `${apiProxyTarget}/businesses` },
-      { source: "/businesses/:path*", destination: `${apiProxyTarget}/businesses/:path*` },
-      { source: "/customers/:path*", destination: `${apiProxyTarget}/customers/:path*` },
-      { source: "/reporting/:path*", destination: `${apiProxyTarget}/reporting/:path*` },
-      { source: "/business/:path*", destination: `${apiProxyTarget}/business/:path*` },
-      { source: "/obligations/:path*", destination: `${apiProxyTarget}/obligations/:path*` },
+      { source: "/api/:path*", destination: `${apiProxyTarget}/:path*` },
     ];
   },
 };

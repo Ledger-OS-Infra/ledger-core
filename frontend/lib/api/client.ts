@@ -14,10 +14,10 @@ function apiBaseUrl(): string {
   const configured = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '')
   if (configured) return configured
 
-  // Same-origin requests — proxied to the API via next.config rewrites when
-  // API_PROXY_TARGET is set on Vercel (or locally for parity testing).
+  // Same-origin /api/* — proxied to the backend via next.config rewrites.
+  // Keeps frontend routes like /customers/[id] separate from GET /customers/:id.
   if (typeof window !== 'undefined') {
-    return window.location.origin
+    return `${window.location.origin}/api`
   }
 
   return process.env.API_PROXY_TARGET?.replace(/\/+$/, '') ?? 'http://localhost:3050'
