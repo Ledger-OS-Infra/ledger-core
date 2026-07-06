@@ -62,13 +62,24 @@ function stripQueryParam(connectionString: string, param: string): string {
 }
 
 function loadCaCert(): string | undefined {
-  const inline = process.env.DATABASE_CA_CERT;
+  const inline = process.env.DATABASE_CA_CERT?.replace(/\\n/g, "\n");
   if (inline && isCompletePem(inline)) {
     return inline;
   }
   const caPath = process.env.DATABASE_CA_CERT_PATH;
   if (caPath) {
-    return fs.readFileSync(caPath, "utf8");
+    try {
+      return fs.readFileSync(caPath, "utf8");
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === "ENOENT") {
+        console.warn(
+          `DATABASE_CA_CERT_PATH not found (${caPath}); falling back to encrypted connection without CA verification. On Vercel, set DATABASE_CA_CERT to the PEM contents instead of a file path.`,
+        );
+        return undefined;
+      }
+      throw err;
+    }
   }
   return undefined;
 }
