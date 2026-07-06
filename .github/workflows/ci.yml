@@ -30,6 +30,7 @@ concurrency:
 
 env:
   AUTH_REQUIRE_EMAIL_VERIFICATION: "false"
+  NOMBA_ENV: production
   JWT_SECRET: ${{ secrets.JWT_SECRET }}
   SMTP_HOST: ${{ secrets.SMTP_HOST }}
   SMTP_PORT: ${{ secrets.SMTP_PORT }}

@@ -1,4 +1,4 @@
-import { nombaConfig, nombaSandboxConfig } from "../config/nombaEnv";
+import { getNombaSandboxConfig, nombaConfig } from "../config/nombaEnv";
 import { NombaAuthService } from "./auth";
 import { NombaHttpClient } from "./httpClient";
 import type {
@@ -55,5 +55,5 @@ export function createNombaClientFromEnv(fetchFn?: FetchFn): NombaClient {
 
 /** Always uses NOMBA_SANDBOX_* — for CI smoke tests while the app runs on live. */
 export function createNombaSandboxClient(fetchFn?: FetchFn): NombaClient {
-  return new NombaClient(nombaSandboxConfig, fetchFn);
+  return new NombaClient(getNombaSandboxConfig(), fetchFn);
 }

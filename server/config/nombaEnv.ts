@@ -60,4 +60,12 @@ export const nombaEnvironment = getNombaEnvironment();
 export const nombaConfig =
   nombaEnvironment === "production" ? loadLiveConfig() : loadSandboxConfig();
 
-export const nombaSandboxConfig = loadSandboxConfig();
+let cachedSandboxConfig: NombaClientConfig | undefined;
+
+/** Sandbox-only client (test:nomba-sandbox). Loaded lazily so production boot does not require NOMBA_SANDBOX_* . */
+export function getNombaSandboxConfig(): NombaClientConfig {
+  if (!cachedSandboxConfig) {
+    cachedSandboxConfig = loadSandboxConfig();
+  }
+  return cachedSandboxConfig;
+}

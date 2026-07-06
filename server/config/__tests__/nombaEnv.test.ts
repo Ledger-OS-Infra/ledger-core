@@ -13,11 +13,6 @@ describe("nombaEnv", () => {
     vi.stubEnv("NOMBA_SUB_ACCOUNT_ID", "live-sub");
     vi.stubEnv("NOMBA_CLIENT_ID", "live-client");
     vi.stubEnv("NOMBA_CLIENT_SECRET", "live-secret");
-    vi.stubEnv("NOMBA_SANDBOX_API_BASE_URL", "https://sandbox.nomba.com");
-    vi.stubEnv("NOMBA_SANDBOX_PARENT_ACCOUNT_ID", "sandbox-parent");
-    vi.stubEnv("NOMBA_SANDBOX_SUB_ACCOUNT_ID", "sandbox-sub");
-    vi.stubEnv("NOMBA_SANDBOX_CLIENT_ID", "sandbox-client");
-    vi.stubEnv("NOMBA_SANDBOX_CLIENT_SECRET", "sandbox-secret");
 
     const { nombaConfig, nombaEnvironment } = await import("../nombaEnv");
 
