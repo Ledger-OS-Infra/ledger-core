@@ -239,6 +239,24 @@ export const reportingClient = {
     return normalizeCustomerBalance(raw)
   },
 
+  async getCustomerDetail(customerId: string): Promise<{
+    balance: CustomerBalance
+    obligations: ObligationAging[]
+    ledger: CustomerLedgerEntry[]
+  }> {
+    const raw = await http.get<{
+      balance: RawCustomerBalance
+      obligations: RawObligationAging[]
+      ledger: RawCustomerLedgerEntry[]
+    }>(`/reporting/customers/${encodeURIComponent(customerId)}/detail`)
+
+    return {
+      balance: normalizeCustomerBalance(raw.balance),
+      obligations: raw.obligations.map(normalizeObligationAging),
+      ledger: raw.ledger.map(normalizeLedgerEntry),
+    }
+  },
+
   async listCustomerObligations(
     customerId: string,
     params: { page?: number; limit?: number } = {},

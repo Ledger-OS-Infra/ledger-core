@@ -3,7 +3,11 @@ name: CI
 # Required repository secrets (Settings → Secrets and variables → Actions):
 #   JWT_SECRET, SMTP_HOST, SMTP_USER, SMTP_PASS
 #   NOMBA_WEBHOOK_SECRET, NOMBA_SUB_ACCOUNT_ID
-#   NOMBA_API_BASE_URL, NOMBA_PARENT_ACCOUNT_ID, NOMBA_CLIENT_ID, NOMBA_CLIENT_SECRET
+#   NOMBA_API_BASE_URL=https://api.nomba.com (live)
+#   NOMBA_PARENT_ACCOUNT_ID, NOMBA_CLIENT_ID, NOMBA_CLIENT_SECRET (live keys)
+#   NOMBA_SANDBOX_API_BASE_URL=https://sandbox.nomba.com
+#   NOMBA_SANDBOX_CLIENT_ID, NOMBA_SANDBOX_CLIENT_SECRET (test keys — CI sandbox job)
+#   Parent/sub-account IDs are shared across live and sandbox on Nomba.
 #   SENTRY_DSN (optional)
 #   NEXT_PUBLIC_API_BASE_URL (optional — direct API URL for local/CI builds)
 #   API_PROXY_TARGET (optional — Vercel server-side proxy to the Express API)
@@ -143,6 +147,11 @@ jobs:
         working-directory: server
     env:
       NOMBA_SANDBOX_VA_IDENTIFIERS: ${{ secrets.NOMBA_SANDBOX_VA_IDENTIFIERS }}
+      NOMBA_SANDBOX_API_BASE_URL: ${{ secrets.NOMBA_SANDBOX_API_BASE_URL }}
+      NOMBA_SANDBOX_CLIENT_ID: ${{ secrets.NOMBA_SANDBOX_CLIENT_ID }}
+      NOMBA_SANDBOX_CLIENT_SECRET: ${{ secrets.NOMBA_SANDBOX_CLIENT_SECRET }}
+      NOMBA_PARENT_ACCOUNT_ID: ${{ secrets.NOMBA_PARENT_ACCOUNT_ID }}
+      NOMBA_SUB_ACCOUNT_ID: ${{ secrets.NOMBA_SUB_ACCOUNT_ID }}
       # Scripts import config/env only for Nomba — placeholders if that changes.
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
       REDIS_URL: redis://localhost:6379

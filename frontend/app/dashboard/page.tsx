@@ -39,6 +39,7 @@ export default function DashboardPage() {
   const transactions = data?.transactions ?? [];
   const customers = data?.customers ?? [];
   const agingSummary = data?.agingSummary ?? {};
+  const nombaAccount = data?.nombaAccount ?? null;
 
   const totalInflow = metrics?.totalInflow ?? 0;
   const totalOutstanding = metrics?.totalOutstanding ?? 0;
@@ -83,6 +84,80 @@ export default function DashboardPage() {
             Couldn&apos;t load dashboard data. Please try again.
           </div>
         )}
+
+        {nombaAccount && (
+          <Card className="mb-8">
+            <div className="px-6 py-4 border-b border-border flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h2 className="font-semibold">Settlement account</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Nomba sub-account where customer VA payments settle
+                </p>
+              </div>
+              <Badge
+                variant={nombaAccount.status === "ACTIVE" ? "success" : "warning"}
+                size="sm"
+              >
+                {nombaAccount.status.toLowerCase()}
+              </Badge>
+            </div>
+            <CardContent className="px-6 py-5">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Available balance
+                  </p>
+                  <p className="mt-2 text-3xl font-semibold font-mono">
+                    {formatCurrency(nombaAccount.balance)}
+                  </p>
+                  {nombaAccount.balanceAsOf && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      As of {formatDate(nombaAccount.balanceAsOf)}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Account holder
+                  </p>
+                  <p className="mt-2 font-medium">{nombaAccount.accountName}</p>
+                  <p className="mt-1 text-xs text-muted-foreground font-mono break-all">
+                    {nombaAccount.subAccountId}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Linked bank account
+                  </p>
+                  {nombaAccount.bankAccounts.length === 0 ? (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      No bank account on file
+                    </p>
+                  ) : (
+                    <div className="mt-2 space-y-3">
+                      {nombaAccount.bankAccounts.map((bank) => (
+                        <div key={`${bank.bankName}-${bank.accountNumber}`}>
+                          <p className="font-mono font-medium">
+                            {bank.accountNumber}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {bank.bankName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {bank.accountName}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatBlock
             label="Total Inflow"

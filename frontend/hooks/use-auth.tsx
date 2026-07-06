@@ -11,7 +11,7 @@ import {
 } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { authClient, type AuthUser, type LoginResponse } from '@/lib/api/auth'
-import { setTokenAccessor } from '@/lib/api/client'
+import { setSessionExpiredHandler, setTokenAccessor } from '@/lib/api/client'
 import {
   clearAuthTokens,
   getStoredAccessToken,
@@ -58,7 +58,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Re-register after HMR — client.ts module reset clears the in-memory accessor.
   useEffect(() => {
     registerTokenAccessor()
-  }, [])
+    setSessionExpiredHandler(() => {
+      clearAuthTokens()
+      setUser(null)
+      router.replace('/auth/login')
+    })
+  }, [router])
 
   const refreshUser = useCallback(async (): Promise<AuthUser | null> => {
     registerTokenAccessor()

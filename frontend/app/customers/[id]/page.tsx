@@ -82,9 +82,11 @@ export default function CustomerDetailPage() {
   const params = useParams<{ id: string }>()
   const id = params.id
 
-  const { data, isLoading, isFetching, isError } = useCustomerDetailQuery(id)
+  const { recordQuery, reportingQuery, isError } = useCustomerDetailQuery(id)
+  const record = recordQuery.data
+  const reporting = reportingQuery.data
 
-  if (isLoading && !data) {
+  if (!record && recordQuery.isLoading) {
     return (
       <div className="p-8 mx-auto">
         <Link
@@ -99,7 +101,7 @@ export default function CustomerDetailPage() {
     )
   }
 
-  if (isError && !data) {
+  if (isError && !record) {
     return (
       <div className="p-8  mx-auto">
         <Link
@@ -114,7 +116,14 @@ export default function CustomerDetailPage() {
     )
   }
 
-  const { record, balance, obligations, ledger } = data!
+  if (!record) {
+    return null
+  }
+
+  const balance = reporting?.balance
+  const obligations = reporting?.obligations ?? []
+  const ledger = reporting?.ledger ?? []
+  const reportingLoading = reportingQuery.isLoading && !reporting
 
   return (
     <div className="p-8  mx-auto">
@@ -126,7 +135,7 @@ export default function CustomerDetailPage() {
         Back to Customers
       </Link>
 
-      {isFetching && (
+      {(recordQuery.isFetching || reportingQuery.isFetching) && (
         <p className="mb-4 text-xs text-muted-foreground">Refreshing…</p>
       )}
 
@@ -150,18 +159,32 @@ export default function CustomerDetailPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <StatBlock
-          label="Outstanding"
-          value={formatCurrency(balance.totalOutstanding)}
-        />
-        <StatBlock
-          label="Wallet Credit"
-          value={formatCurrency(balance.walletCredit)}
-        />
-        <StatBlock
-          label="Net Balance"
-          value={formatCurrency(balance.netBalance)}
-        />
+        {reportingLoading ? (
+          <>
+            <div className="border border-border rounded bg-card p-4 h-[88px] animate-pulse" />
+            <div className="border border-border rounded bg-card p-4 h-[88px] animate-pulse" />
+            <div className="border border-border rounded bg-card p-4 h-[88px] animate-pulse" />
+          </>
+        ) : balance ? (
+          <>
+            <StatBlock
+              label="Outstanding"
+              value={formatCurrency(balance.totalOutstanding)}
+            />
+            <StatBlock
+              label="Wallet Credit"
+              value={formatCurrency(balance.walletCredit)}
+            />
+            <StatBlock
+              label="Net Balance"
+              value={formatCurrency(balance.netBalance)}
+            />
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground md:col-span-3">
+            Couldn&apos;t load balances.
+          </p>
+        )}
       </div>
 
       {/* Obligations */}
@@ -170,7 +193,11 @@ export default function CustomerDetailPage() {
           <CardTitle>Outstanding Obligations</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {obligations.length === 0 ? (
+          {reportingLoading ? (
+            <p className="px-6 py-8 text-center text-sm text-muted-foreground">
+              Loading obligations…
+            </p>
+          ) : obligations.length === 0 ? (
             <p className="px-6 py-8 text-center text-sm text-muted-foreground">
               No outstanding obligations
             </p>
@@ -242,7 +269,11 @@ export default function CustomerDetailPage() {
           <CardTitle>Ledger</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {ledger.length === 0 ? (
+          {reportingLoading ? (
+            <p className="px-6 py-8 text-center text-sm text-muted-foreground">
+              Loading ledger…
+            </p>
+          ) : ledger.length === 0 ? (
             <p className="px-6 py-8 text-center text-sm text-muted-foreground">
               No ledger activity yet
             </p>

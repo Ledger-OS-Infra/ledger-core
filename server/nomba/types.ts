@@ -36,6 +36,32 @@ export interface VirtualAccount {
   expiryDate?: string;
 }
 
+export interface NombaBankAccount {
+  bankAccountNumber: string;
+  bankName: string;
+  bankAccountName: string;
+}
+
+export interface NombaAccountDetails {
+  createdAt: string;
+  accountId: string;
+  accountHolderId: string;
+  accountRef: string;
+  bvn?: string;
+  status: string;
+  type?: string;
+  accountName: string;
+  currency: "NGN";
+  banks: NombaBankAccount[];
+}
+
+/** Nomba returns balance `amount` as a decimal NGN string (e.g. `"281946.0"`). */
+export interface NombaAccountBalance {
+  amount: string;
+  currency: "NGN";
+  timeCreated: string;
+}
+
 export interface NombaClientConfig {
   baseUrl: string;
   parentAccountId: string;

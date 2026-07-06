@@ -186,6 +186,15 @@
   button, a, input, textarea, select {
     color: inherit;
   }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
   
   /* Light mode text colors */
   :not(.dark) button,

@@ -345,7 +345,7 @@ export function AddBillingRuleModal({ businessId }: { businessId: string }) {
                   Customer
                 </Label>
                 <Select
-                  value={formData.customerId || undefined}
+                  value={formData.customerId}
                   onValueChange={(value) =>
                     setValues((prev) => ({ ...prev, customerId: value }))
                   }

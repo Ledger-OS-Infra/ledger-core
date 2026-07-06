@@ -1,4 +1,4 @@
-import { createNombaClientFromEnv } from "../nomba/client";
+import { createNombaSandboxClient } from "../nomba/client";
 import { NombaValidationError } from "../nomba/errors";
 import type { VirtualAccount } from "../nomba/types";
 
@@ -32,7 +32,7 @@ function printVirtualAccount(account: VirtualAccount): void {
 }
 
 async function printKnownAccounts(
-  client: ReturnType<typeof createNombaClientFromEnv>,
+  client: ReturnType<typeof createNombaSandboxClient>,
 ): Promise<void> {
   const identifiers = sandboxIdentifiers();
 
@@ -51,7 +51,7 @@ async function printKnownAccounts(
 }
 
 async function main() {
-  const client = createNombaClientFromEnv();
+  const client = createNombaSandboxClient();
   const accountRef = `ref_${Date.now()}`;
 
   console.info("Creating sandbox virtual account...", { accountRef });

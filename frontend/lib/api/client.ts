@@ -1,5 +1,10 @@
 import type { PaginationMeta, QueryParams } from './types'
-import { readAccessToken } from '@/lib/auth-storage'
+import {
+  clearAuthTokens,
+  getStoredRefreshToken,
+  readAccessToken,
+  storeAuthTokens,
+} from '@/lib/auth-storage'
 
 // ---------------------------------------------------------------------------
 // URL builder
@@ -38,9 +43,77 @@ function buildUrl(path: string, query?: QueryParams): string {
 // ---------------------------------------------------------------------------
 
 let tokenAccessor: (() => string | null) | null = null
+let sessionExpiredHandler: (() => void) | null = null
+let refreshInFlight: Promise<boolean> | null = null
 
 export function setTokenAccessor(fn: () => string | null) {
   tokenAccessor = fn
+}
+
+export function setSessionExpiredHandler(fn: () => void) {
+  sessionExpiredHandler = fn
+}
+
+function shouldAttemptTokenRefresh(path: string): boolean {
+  return (
+    !path.startsWith('/auth/login') &&
+    !path.startsWith('/auth/refresh') &&
+    !path.startsWith('/auth/signup')
+  )
+}
+
+async function refreshAccessToken(): Promise<boolean> {
+  if (refreshInFlight) return refreshInFlight
+
+  refreshInFlight = (async () => {
+    const refreshToken = getStoredRefreshToken()
+    if (!refreshToken) return false
+
+    try {
+      const response = await fetch(buildUrl('/auth/refresh'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      })
+
+      if (!response.ok) {
+        clearAuthTokens()
+        return false
+      }
+
+      const json = (await response.json()) as {
+        data: { accessToken: string; refreshToken: string }
+      }
+      storeAuthTokens(json.data.accessToken, json.data.refreshToken)
+      return true
+    } catch {
+      clearAuthTokens()
+      return false
+    } finally {
+      refreshInFlight = null
+    }
+  })()
+
+  return refreshInFlight
+}
+
+async function parseErrorBody(
+  response: Response,
+): Promise<{ message: string; code?: string }> {
+  let message = `API request failed [${response.status}]`
+  let code: string | undefined
+
+  try {
+    const body = (await response.json()) as {
+      error?: { message?: string; code?: string }
+    }
+    message = body.error?.message ?? message
+    code = body.error?.code
+  } catch {
+    // body wasn't JSON
+  }
+
+  return { message, code }
 }
 
 // ---------------------------------------------------------------------------
@@ -59,7 +132,11 @@ export class ApiError extends Error {
   }
 }
 
-async function apiFetch<T>(path: string, init?: ApiFetchInit): Promise<T> {
+async function apiFetch<T>(
+  path: string,
+  init?: ApiFetchInit,
+  retriedAfterRefresh = false,
+): Promise<T> {
   const authHeaders: Record<string, string> = {}
   const token = tokenAccessor?.() ?? readAccessToken()
   if (token) {
@@ -76,15 +153,21 @@ async function apiFetch<T>(path: string, init?: ApiFetchInit): Promise<T> {
   })
 
   if (!response.ok) {
-    let message = `API request failed [${response.status}]`
-    let code: string | undefined
-    try {
-      const body = await response.json() as { error?: { message?: string; code?: string } }
-      message = body.error?.message ?? message
-      code = body.error?.code
-    } catch {
-      // body wasn't JSON
+    const { message, code } = await parseErrorBody(response)
+
+    if (
+      !retriedAfterRefresh &&
+      response.status === 401 &&
+      code === 'INVALID_ACCESS_TOKEN' &&
+      shouldAttemptTokenRefresh(path)
+    ) {
+      const refreshed = await refreshAccessToken()
+      if (refreshed) {
+        return apiFetch<T>(path, init, true)
+      }
+      sessionExpiredHandler?.()
     }
+
     throw new ApiError(message, response.status, code)
   }
 
@@ -95,6 +178,7 @@ async function apiFetch<T>(path: string, init?: ApiFetchInit): Promise<T> {
 async function apiFetchPaginated<T>(
   path: string,
   init?: ApiFetchInit,
+  retriedAfterRefresh = false,
 ): Promise<{ items: T[]; pagination: PaginationMeta }> {
   const authHeaders: Record<string, string> = {}
   const token = tokenAccessor?.() ?? readAccessToken()
@@ -113,15 +197,21 @@ async function apiFetchPaginated<T>(
   })
 
   if (!response.ok) {
-    let message = `API request failed [${response.status}]`
-    let code: string | undefined
-    try {
-      const body = await response.json() as { error?: { message?: string; code?: string } }
-      message = body.error?.message ?? message
-      code = body.error?.code
-    } catch {
-      // body wasn't JSON
+    const { message, code } = await parseErrorBody(response)
+
+    if (
+      !retriedAfterRefresh &&
+      response.status === 401 &&
+      code === 'INVALID_ACCESS_TOKEN' &&
+      shouldAttemptTokenRefresh(path)
+    ) {
+      const refreshed = await refreshAccessToken()
+      if (refreshed) {
+        return apiFetchPaginated<T>(path, init, true)
+      }
+      sessionExpiredHandler?.()
     }
+
     throw new ApiError(message, response.status, code)
   }
 
@@ -146,7 +236,11 @@ async function apiFetchPaginated<T>(
   }
 }
 
-async function apiFetchBlob(path: string, init?: ApiFetchInit): Promise<Blob> {
+async function apiFetchBlob(
+  path: string,
+  init?: ApiFetchInit,
+  retriedAfterRefresh = false,
+): Promise<Blob> {
   const authHeaders: Record<string, string> = {}
   const token = tokenAccessor?.() ?? readAccessToken()
   if (token) {
@@ -162,15 +256,21 @@ async function apiFetchBlob(path: string, init?: ApiFetchInit): Promise<Blob> {
   })
 
   if (!response.ok) {
-    let message = `API request failed [${response.status}]`
-    let code: string | undefined
-    try {
-      const body = await response.json() as { error?: { message?: string; code?: string } }
-      message = body.error?.message ?? message
-      code = body.error?.code
-    } catch {
-      // body wasn't JSON
+    const { message, code } = await parseErrorBody(response)
+
+    if (
+      !retriedAfterRefresh &&
+      response.status === 401 &&
+      code === 'INVALID_ACCESS_TOKEN' &&
+      shouldAttemptTokenRefresh(path)
+    ) {
+      const refreshed = await refreshAccessToken()
+      if (refreshed) {
+        return apiFetchBlob(path, init, true)
+      }
+      sessionExpiredHandler?.()
     }
+
     throw new ApiError(message, response.status, code)
   }
 

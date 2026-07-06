@@ -8,6 +8,7 @@ const app = createApp();
 
 app.listen(env.port, () => {
   console.info(`Ledger-Core API listening on http://localhost:${env.port}`);
+  console.info(`Nomba environment: ${env.nombaEnvironment}`);
 });
 
 void startReconciliationWorker().catch((err) => {

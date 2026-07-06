@@ -240,6 +240,38 @@ reportingRouter.get(
   },
 );
 
+// Balance, obligations, and ledger in one round trip (customer detail page).
+reportingRouter.get(
+  "/customers/:customerId/detail",
+  validate({ params: reportingCustomerIdParams }),
+  requireReportingCustomerMember("customerId"),
+  async (_req, res, next) => {
+    try {
+      const { customerId } = res.locals.params as { customerId: string };
+
+      const [balance, obligations, ledger] = await Promise.all([
+        getCustomerBalance(customerId),
+        listCustomerOutstandingObligations(customerId, { page: 1, limit: 100 }),
+        listCustomerLedgerHistory(customerId, { page: 1, limit: 50 }),
+      ]);
+
+      if (!balance) {
+        throw new AppError("Customer not found", 404, "CUSTOMER_NOT_FOUND");
+      }
+
+      res.json({
+        data: {
+          balance: formatCustomerBalance(balance),
+          obligations: obligations.items.map(formatObligationAging),
+          ledger: ledger.items.map(formatLedgerHistoryRow),
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
 reportingRouter.get(
   "/customers/:customerId/obligations",
   validate({ params: reportingCustomerIdParams, query: paginationQuery }),
@@ -248,11 +280,6 @@ reportingRouter.get(
     try {
       const { customerId } = res.locals.params as { customerId: string };
       const query = res.locals.query as { page: number; limit: number };
-
-      const customer = await getCustomerBalance(customerId);
-      if (!customer) {
-        throw new AppError("Customer not found", 404, "CUSTOMER_NOT_FOUND");
-      }
 
       const result = await listCustomerOutstandingObligations(customerId, query);
       res.json(
@@ -275,11 +302,6 @@ reportingRouter.get(
     try {
       const { customerId } = res.locals.params as { customerId: string };
       const query = res.locals.query as { page: number; limit: number };
-
-      const customer = await getCustomerBalance(customerId);
-      if (!customer) {
-        throw new AppError("Customer not found", 404, "CUSTOMER_NOT_FOUND");
-      }
 
       const result = await listCustomerLedgerHistory(customerId, query);
       res.json(

@@ -13,6 +13,7 @@
     "billing:generate-due": "ts-node -r dotenv/config --transpile-only scripts/generate-due-obligations.ts",
     "seed": "knex seed:run --knexfile knexfile.ts",
     "db:setup": "npm run migrate && npm run db:bootstrap",
+    "db:reset": "ts-node -r dotenv/config --transpile-only scripts/reset-db.ts",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:integration:live": "INTEGRATION_LIVE=true vitest run --config vitest.integration.config.ts",

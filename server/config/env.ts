@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { nombaConfig } from "./nombaEnv";
+import { nombaConfig, nombaEnvironment } from "./nombaEnv";
 
 dotenv.config();
 
@@ -41,7 +41,8 @@ export const env = {
   /** Force real SMTP even when mailDryRun would apply (e.g. manual send check). */
   mailSend: process.env.MAIL_SEND === "true",
 
-  nombaSubAccountId: required("NOMBA_SUB_ACCOUNT_ID"),
+  nombaSubAccountId: nombaConfig.subAccountId,
+  nombaEnvironment,
 };
 
-export { nombaConfig };
+export { nombaConfig, nombaEnvironment };
