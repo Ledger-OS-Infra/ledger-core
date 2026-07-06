@@ -2,7 +2,9 @@ import path from "node:path";
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
-const apiProxyTarget = process.env.API_PROXY_TARGET?.replace(/\/+$/, "");
+const apiProxyTarget = (
+  process.env.API_PROXY_TARGET ?? process.env.NEXT_PUBLIC_API_BASE_URL
+)?.replace(/\/+$/, "");
 
 const nextConfig: NextConfig = {
   turbopack: {
