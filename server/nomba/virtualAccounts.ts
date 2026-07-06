@@ -2,7 +2,10 @@ import type { NombaHttpClient } from "./httpClient";
 import type { CreateVirtualAccountInput, VirtualAccount } from "./types";
 
 export class NombaVirtualAccountService {
-  constructor(private readonly http: NombaHttpClient) {}
+  constructor(
+    private readonly http: NombaHttpClient,
+    private readonly subAccountId: string,
+  ) {}
 
   createVirtualAccount(input: CreateVirtualAccountInput): Promise<VirtualAccount> {
     const body = {
@@ -16,8 +19,13 @@ export class NombaVirtualAccountService {
         : {}),
     };
 
-    // Parent account VA — documented for sandbox; funds settle under parent accountId header.
-    return this.http.post<VirtualAccount>("/v1/accounts/virtual", body);
+    // Sub-account VA — accountHolderId scopes to sub-account so Nomba's webhook
+    // redirect lookup finds the URL registered for the sub-account (hackathon form).
+    // Header accountId stays parent; path uses subAccountId per Nomba docs.
+    return this.http.post<VirtualAccount>(
+      `/v1/accounts/virtual/${encodeURIComponent(this.subAccountId)}`,
+      body,
+    );
   }
 
   getVirtualAccount(identifier: string): Promise<VirtualAccount> {

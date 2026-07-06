@@ -22,7 +22,7 @@ export class NombaClient {
   ) {
     const auth = new NombaAuthService(config, fetchFn);
     const http = new NombaHttpClient(config, auth, fetchFn);
-    this.virtualAccounts = new NombaVirtualAccountService(http);
+    this.virtualAccounts = new NombaVirtualAccountService(http, config.subAccountId);
     this.accounts = new NombaAccountsService(http);
   }
 
