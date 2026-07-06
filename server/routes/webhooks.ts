@@ -14,9 +14,9 @@ import { enqueueReconciliationJob } from "../queues/reconciliation";
 
 export const webhooksRouter = Router();
 
-webhooksRouter.post(
-  env.nombaWebhookPath,
-  async (req: Request, res: Response) => {
+const CANONICAL_WEBHOOK_PATH = "/webhooks/nomba";
+
+async function handleNombaWebhook(req: Request, res: Response): Promise<void> {
     const signature = req.header("nomba-signature");
     const timestamp = req.header("nomba-timestamp");
 
@@ -183,5 +183,10 @@ webhooksRouter.post(
     );
 
     res.status(200).json({ received: true });
-  },
-);
+}
+
+webhooksRouter.post(env.nombaWebhookPath, handleNombaWebhook);
+
+if (env.nombaWebhookPath !== CANONICAL_WEBHOOK_PATH) {
+  webhooksRouter.post(CANONICAL_WEBHOOK_PATH, handleNombaWebhook);
+}

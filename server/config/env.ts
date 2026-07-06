@@ -17,7 +17,7 @@ export const env = {
   databaseUrl: required("DATABASE_URL"),
   redisUrl: required("REDIS_URL"),
   nombaWebhookSecret: required("NOMBA_WEBHOOK_SECRET"),
-  nombaWebhookPath: process.env.NOMBA_WEBHOOK_PATH ?? "/webhooks/nomba",
+  nombaWebhookPath: "/webhooks/nomba",
 
   jwtSecret: required("JWT_SECRET"),
   jwtAccessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? "30m",
