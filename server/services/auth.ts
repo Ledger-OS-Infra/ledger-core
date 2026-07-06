@@ -124,10 +124,11 @@ export async function signup(input: {
     client.release();
   }
 
-  // Fire-and-forget email — don't block signup response
-  sendVerificationEmail(input.email, verifyToken).catch((err) => {
+  try {
+    await sendVerificationEmail(input.email, verifyToken);
+  } catch (err) {
     logger.error({ err, userId }, "Failed to send verification email");
-  });
+  }
 
   return {
     message: "Account created. Please check your email to verify your account.",
@@ -263,9 +264,11 @@ export async function forgotPassword(email: string): Promise<{ message: string }
     client.release();
   }
 
-  sendPasswordResetEmail(email, resetToken).catch((err) => {
+  try {
+    await sendPasswordResetEmail(email, resetToken);
+  } catch (err) {
     logger.error({ err, userId: user.id }, "Failed to send password reset email");
-  });
+  }
 
   return { message: genericMessage };
 }

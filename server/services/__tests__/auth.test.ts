@@ -148,13 +148,10 @@ describe("Auth Service", () => {
       expect(query).toHaveBeenCalledWith("COMMIT");
       expect(release).toHaveBeenCalled();
 
-      // Verification email is fire-and-forget but should be called
-      await vi.waitFor(() => {
-        expect(sendVerificationEmail).toHaveBeenCalledWith(
-          "test@example.com",
-          expect.any(String),
-        );
-      });
+      expect(sendVerificationEmail).toHaveBeenCalledWith(
+        "test@example.com",
+        expect.any(String),
+      );
     });
 
     it("rejects duplicate email", async () => {
