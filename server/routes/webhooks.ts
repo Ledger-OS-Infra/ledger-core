@@ -5,6 +5,7 @@ import { findCustomerByAccountNumber } from "../db/customers";
 import { insertPaymentEvent } from "../db/paymentEvents";
 import { claimEvent, releaseEvent } from "../idempotency/claimEvent";
 import { logger } from "../lib/logger";
+import { processPaymentEvent } from "../lib/reconciliation/processPaymentEvent";
 import {
   verifyNombaWebhookSignature,
   type NombaWebhookPayload,
@@ -147,14 +148,26 @@ webhooksRouter.post(
     }
 
     if (customer) {
-      void enqueueReconciliationJob({ paymentEventId: paymentEvent.id }).catch(
-        (err) => {
+      if (process.env.VERCEL) {
+        // Serverless: no long-running BullMQ worker — reconcile in-process.
+        try {
+          await processPaymentEvent(paymentEvent.id);
+        } catch (err) {
           logger.error(
             { err, paymentEventId: paymentEvent.id, transactionId },
-            "Failed to enqueue reconciliation job",
+            "Inline reconciliation failed on serverless",
           );
-        },
-      );
+        }
+      } else {
+        void enqueueReconciliationJob({ paymentEventId: paymentEvent.id }).catch(
+          (err) => {
+            logger.error(
+              { err, paymentEventId: paymentEvent.id, transactionId },
+              "Failed to enqueue reconciliation job",
+            );
+          },
+        );
+      }
     }
 
     logger.info(

@@ -30,6 +30,10 @@ vi.mock("../../queues/reconciliation", () => ({
   enqueueReconciliationJob: vi.fn(),
 }));
 
+vi.mock("../../lib/reconciliation/processPaymentEvent", () => ({
+  processPaymentEvent: vi.fn(),
+}));
+
 vi.mock("@sentry/node", () => ({
   addBreadcrumb: vi.fn(),
   withScope: vi.fn((fn: (scope: { setTag: () => void; setContext: () => void }) => void) => {

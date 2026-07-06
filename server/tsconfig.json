@@ -13,6 +13,7 @@
   },
   "include": [
     "index.ts",
+    "api/**/*.ts",
     "app.ts",
     "instrument.ts",
     "config/**/*.ts",
