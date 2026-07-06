@@ -4,6 +4,7 @@ import { env } from "../config/env";
 import { findCustomerByAccountNumber } from "../db/customers";
 import { insertPaymentEvent } from "../db/paymentEvents";
 import { claimEvent, releaseEvent } from "../idempotency/claimEvent";
+import { isPgUniqueViolation } from "../lib/pgErrors";
 import { logger } from "../lib/logger";
 import { processPaymentEvent } from "../lib/reconciliation/processPaymentEvent";
 import {
@@ -129,6 +130,10 @@ async function handleNombaWebhook(req: Request, res: Response): Promise<void> {
         receivedAt: new Date(),
       });
     } catch (err) {
+      if (isPgUniqueViolation(err)) {
+        res.status(200).json({ received: true, duplicate: true });
+        return;
+      }
       Sentry.withScope((scope) => {
         scope.setTag("transaction_id", transactionId);
         scope.setContext("payment_event", {
@@ -190,3 +195,9 @@ webhooksRouter.post(env.nombaWebhookPath, handleNombaWebhook);
 if (env.nombaWebhookPath !== CANONICAL_WEBHOOK_PATH) {
   webhooksRouter.post(CANONICAL_WEBHOOK_PATH, handleNombaWebhook);
 }
+
+webhooksRouter.get(CANONICAL_WEBHOOK_PATH, (_req, res) => {
+  res.status(405).json({
+    error: "Nomba webhooks must use POST with nomba-signature and nomba-timestamp headers",
+  });
+});

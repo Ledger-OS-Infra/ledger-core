@@ -1,6 +1,7 @@
 import type { Pool, PoolClient } from "pg";
 import { pool } from "./pool";
 import { AppError } from "../lib/AppError";
+import { isPgUniqueViolation } from "../lib/pgErrors";
 
 type DbClient = Pool | PoolClient;
 
@@ -82,6 +83,18 @@ export async function getPaymentEventById(
   const { rows } = await client.query<PaymentEventRow>(
     `SELECT * FROM payment_events WHERE id = $1`,
     [paymentEventId],
+  );
+
+  return rows[0] ?? null;
+}
+
+export async function getPaymentEventByIdempotencyKey(
+  idempotencyKey: string,
+  client: DbClient = pool,
+): Promise<PaymentEventRow | null> {
+  const { rows } = await client.query<PaymentEventRow>(
+    `SELECT * FROM payment_events WHERE idempotency_key = $1`,
+    [idempotencyKey],
   );
 
   return rows[0] ?? null;
