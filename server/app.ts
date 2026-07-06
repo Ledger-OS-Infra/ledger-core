@@ -52,10 +52,8 @@ export function createApp(): Express {
   app.use("/businesses", requireAuth, businessesRouter);
   app.use("/customers", requireAuth, customersRouter);
   app.use("/reporting", requireAuth, reportingRouter);
-  // Path-scoped auth — do not use bare app.use(requireAuth, router) or unmatched
-  // routes (e.g. POST /webhooks/nomba when path/env mismatch) hit JWT middleware.
-  app.use(["/business", "/customers"], requireAuth, billingRouter);
-  app.use(["/customers", "/obligations"], requireAuth, obligationsRouter);
+  app.use(billingRouter);
+  app.use(obligationsRouter);
 
   Sentry.setupExpressErrorHandler(app, {
     shouldHandleError: (err) => !(err instanceof AppError),

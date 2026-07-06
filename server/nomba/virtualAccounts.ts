@@ -5,6 +5,7 @@ export class NombaVirtualAccountService {
   constructor(
     private readonly http: NombaHttpClient,
     private readonly subAccountId: string,
+    private readonly scopeToSubAccount: boolean,
   ) {}
 
   createVirtualAccount(input: CreateVirtualAccountInput): Promise<VirtualAccount> {
@@ -19,13 +20,13 @@ export class NombaVirtualAccountService {
         : {}),
     };
 
-    // Sub-account VA — accountHolderId scopes to sub-account so Nomba's webhook
-    // redirect lookup finds the URL registered for the sub-account (hackathon form).
-    // Header accountId stays parent; path uses subAccountId per Nomba docs.
-    return this.http.post<VirtualAccount>(
-      `/v1/accounts/virtual/${encodeURIComponent(this.subAccountId)}`,
-      body,
-    );
+    const path = this.scopeToSubAccount
+      ? `/v1/accounts/virtual/${encodeURIComponent(this.subAccountId)}`
+      : "/v1/accounts/virtual";
+
+    // Live: sub-account VA so accountHolderId matches webhook redirect lookup.
+    // Sandbox: parent endpoint (sub-account path fails on sandbox.nomba.com).
+    return this.http.post<VirtualAccount>(path, body);
   }
 
   getVirtualAccount(identifier: string): Promise<VirtualAccount> {

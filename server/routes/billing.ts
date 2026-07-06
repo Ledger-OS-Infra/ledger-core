@@ -12,11 +12,13 @@ import {
   requireCustomerWrite,
 } from "../middleware/businessAccess";
 import { validate } from "../middleware/validate";
+import { requireAuth } from "../middleware/requireAuth";
 
 export const billingRouter = Router();
 
 billingRouter.get(
   "/business/:businessId/billing-rules",
+  requireAuth,
   validate({ params: businessIdParams }),
   requireBusinessMember("businessId"),
   async (_req, res, next) => {
@@ -32,6 +34,7 @@ billingRouter.get(
 
 billingRouter.post(
   "/customers/:id/billing-rules",
+  requireAuth,
   validate({ params: customerIdParams, body: createBillingRuleBody }),
   requireCustomerWrite("id"),
   async (req, res, next) => {
@@ -65,6 +68,7 @@ billingRouter.post(
 
 billingRouter.get(
   "/customers/:id/billing-rules",
+  requireAuth,
   validate({ params: customerIdParams }),
   requireCustomerMember("id"),
   async (_req, res, next) => {

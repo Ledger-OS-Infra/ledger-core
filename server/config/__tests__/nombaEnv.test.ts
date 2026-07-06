@@ -19,6 +19,7 @@ describe("nombaEnv", () => {
     expect(nombaEnvironment).toBe("production");
     expect(nombaConfig.baseUrl).toBe("https://api.nomba.com");
     expect(nombaConfig.clientId).toBe("live-client");
+    expect(nombaConfig.scopeVirtualAccountsToSubAccount).toBe(true);
   });
 
   it("defaults to production when NOMBA_ENV is unset but live credentials exist", async () => {
@@ -52,5 +53,6 @@ describe("nombaEnv", () => {
     expect(nombaConfig.clientId).toBe("sandbox-client");
     expect(nombaConfig.parentAccountId).toBe("shared-parent");
     expect(nombaConfig.subAccountId).toBe("shared-sub");
+    expect(nombaConfig.scopeVirtualAccountsToSubAccount).toBe(false);
   });
 });

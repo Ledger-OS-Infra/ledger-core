@@ -65,7 +65,7 @@ describe("NombaHttpClient", () => {
 
     const client = createClient(fetchFn);
     const result = await client.post<typeof virtualAccount>(
-      "/v1/accounts/virtual/sub-id",
+      "/v1/accounts/virtual",
       {
         accountRef: "ref-123",
         accountName: "John Doe",
@@ -75,7 +75,7 @@ describe("NombaHttpClient", () => {
 
     expect(result.bankAccountNumber).toBe("91714245345");
     expect(fetchFn.mock.calls[1]?.[0]).toBe(
-      "https://sandbox.nomba.com/v1/accounts/virtual/sub-id",
+      "https://sandbox.nomba.com/v1/accounts/virtual",
     );
   });
 

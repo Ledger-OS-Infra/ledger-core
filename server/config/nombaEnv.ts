@@ -46,6 +46,7 @@ function loadLiveConfig(): NombaClientConfig {
     subAccountId: required("NOMBA_SUB_ACCOUNT_ID"),
     clientId: required("NOMBA_CLIENT_ID"),
     clientSecret: required("NOMBA_CLIENT_SECRET"),
+    scopeVirtualAccountsToSubAccount: true,
   };
 }
 
@@ -63,6 +64,7 @@ export function loadSandboxConfig(): NombaClientConfig {
     ),
     clientId: required("NOMBA_SANDBOX_CLIENT_ID"),
     clientSecret: required("NOMBA_SANDBOX_CLIENT_SECRET"),
+    scopeVirtualAccountsToSubAccount: false,
   };
 }
 

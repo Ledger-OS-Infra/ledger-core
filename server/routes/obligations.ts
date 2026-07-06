@@ -19,11 +19,13 @@ import {
   requireObligationWrite,
 } from "../middleware/businessAccess";
 import { validate } from "../middleware/validate";
+import { requireAuth } from "../middleware/requireAuth";
 
 export const obligationsRouter = Router();
 
 obligationsRouter.post(
   "/customers/:id/obligations",
+  requireAuth,
   validate({ params: customerIdParams, body: createObligationBody }),
   requireCustomerWrite("id"),
   async (req, res, next) => {
@@ -55,6 +57,7 @@ obligationsRouter.post(
 
 obligationsRouter.get(
   "/customers/:id/obligations",
+  requireAuth,
   validate({
     params: customerIdParams,
     query: listObligationsQuery,
@@ -82,6 +85,7 @@ obligationsRouter.get(
 
 obligationsRouter.get(
   "/obligations/:obligationId",
+  requireAuth,
   validate({ params: obligationIdParams }),
   requireObligationMember("obligationId"),
   async (_req, res, next) => {
@@ -102,6 +106,7 @@ obligationsRouter.get(
 
 obligationsRouter.patch(
   "/obligations/:obligationId",
+  requireAuth,
   validate({ params: obligationIdParams, body: patchObligationBody }),
   requireObligationWrite("obligationId"),
   async (req, res, next) => {

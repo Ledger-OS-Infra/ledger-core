@@ -68,6 +68,8 @@ export interface NombaClientConfig {
   subAccountId: string;
   clientId: string;
   clientSecret: string;
+  /** Live: scope VAs to sub-account for webhook redirect. Sandbox: parent endpoint. */
+  scopeVirtualAccountsToSubAccount?: boolean;
 }
 
 export type FetchFn = typeof fetch;
