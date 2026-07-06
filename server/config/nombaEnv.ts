@@ -18,6 +18,18 @@ export function getNombaEnvironment(): NombaEnvironment {
   if (value === "production" || value === "live") {
     return "production";
   }
+  if (value === "sandbox") {
+    return "sandbox";
+  }
+
+  // Deploy/CI often sets live keys without NOMBA_ENV — prefer production then.
+  if (
+    process.env.NOMBA_API_BASE_URL?.trim() &&
+    process.env.NOMBA_CLIENT_ID?.trim()
+  ) {
+    return "production";
+  }
+
   return "sandbox";
 }
 

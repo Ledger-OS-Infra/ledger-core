@@ -21,6 +21,19 @@ describe("nombaEnv", () => {
     expect(nombaConfig.clientId).toBe("live-client");
   });
 
+  it("defaults to production when NOMBA_ENV is unset but live credentials exist", async () => {
+    vi.stubEnv("NOMBA_API_BASE_URL", "https://api.nomba.com");
+    vi.stubEnv("NOMBA_PARENT_ACCOUNT_ID", "live-parent");
+    vi.stubEnv("NOMBA_SUB_ACCOUNT_ID", "live-sub");
+    vi.stubEnv("NOMBA_CLIENT_ID", "live-client");
+    vi.stubEnv("NOMBA_CLIENT_SECRET", "live-secret");
+
+    const { nombaConfig, nombaEnvironment } = await import("../nombaEnv");
+
+    expect(nombaEnvironment).toBe("production");
+    expect(nombaConfig.baseUrl).toBe("https://api.nomba.com");
+  });
+
   it("falls back to live parent/sub for sandbox when sandbox IDs are omitted", async () => {
     vi.stubEnv("NOMBA_ENV", "sandbox");
     vi.stubEnv("NOMBA_API_BASE_URL", "https://api.nomba.com");
