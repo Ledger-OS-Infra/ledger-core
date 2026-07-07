@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
 import type { Express } from "express";
-import { createApp } from "../../app";
+import { createApp } from "../../expressApp";
 import { pool } from "../../db/pool";
 import { env } from "../../config/env";
 import { redis } from "../../redis/client";

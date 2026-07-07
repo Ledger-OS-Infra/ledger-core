@@ -1,7 +1,15 @@
 /**
- * Vercel serverless entry for /api rewrites — same handler as index.ts.
+ * Vercel serverless entry for /api rewrites.
  * Uses `export =` so tsc emits `module.exports = handler` for the Vercel CJS runtime.
  */
-import handler from "../index";
+import type { Request, Response } from "express";
+import "../instrument";
+import { createApp } from "../expressApp";
+
+const app = createApp();
+
+function handler(req: Request, res: Response): void {
+  app(req, res);
+}
 
 export = handler;

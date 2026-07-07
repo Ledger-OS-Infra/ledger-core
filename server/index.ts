@@ -1,10 +1,10 @@
 /**
  * Vercel root serverless entry (GET /). Must default-export a request handler.
- * api/index.ts re-exports the same handler for /api rewrites.
+ * Named expressApp.ts (not app.ts) so Vercel does not treat it as the lambda entry.
  */
 import type { Request, Response } from "express";
 import "./instrument";
-import { createApp } from "./app";
+import { createApp } from "./expressApp";
 
 const app = createApp();
 

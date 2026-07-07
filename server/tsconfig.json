@@ -15,7 +15,7 @@
     "index.ts",
     "main.ts",
     "api/**/*.ts",
-    "app.ts",
+    "expressApp.ts",
     "instrument.ts",
     "config/**/*.ts",
     "db/**/*.ts",
