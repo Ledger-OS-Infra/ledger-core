@@ -6,3 +6,14 @@ export function nombaNgnStringToKobo(amount: string): number {
   }
   return Math.round(naira * 100);
 }
+
+/**
+ * Nomba webhook `transactionAmount` is in NGN (whole/decimal), while Ledger stores kobo.
+ * Convert once at ingest so reconciliation and reporting stay consistent.
+ */
+export function nombaWebhookAmountToKobo(amount: number): number {
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error(`Invalid Nomba webhook transactionAmount: ${amount}`);
+  }
+  return Math.round(amount * 100);
+}

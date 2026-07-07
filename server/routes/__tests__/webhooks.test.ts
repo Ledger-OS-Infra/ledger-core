@@ -67,7 +67,7 @@ const payload = {
       responseCode: "00",
       aliasAccountNumber: "8112340001",
       aliasAccountReference: "INV-001",
-      transactionAmount: 5000,
+      transactionAmount: 50,
     },
     customer: {
       senderName: "Jane Sender",
@@ -132,6 +132,7 @@ describe("POST /webhooks/nomba", () => {
     expect(insertPaymentEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         transactionId: "txn-123",
+        transactionAmount: 5000,
         virtualAccountId: "va-1",
         businessId: "biz-1",
         isMatched: true,
@@ -167,6 +168,7 @@ describe("POST /webhooks/nomba", () => {
     expect(res.status).toBe(200);
     expect(insertPaymentEvent).toHaveBeenCalledWith(
       expect.objectContaining({
+        transactionAmount: 5000,
         virtualAccountId: null,
         businessId: null,
         isMatched: false,

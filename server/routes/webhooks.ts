@@ -6,6 +6,7 @@ import { insertPaymentEvent } from "../db/paymentEvents";
 import { claimEvent, releaseEvent } from "../idempotency/claimEvent";
 import { isPgUniqueViolation } from "../lib/pgErrors";
 import { logger } from "../lib/logger";
+import { nombaWebhookAmountToKobo } from "../lib/nomba/amount";
 import { processPaymentEvent } from "../lib/reconciliation/processPaymentEvent";
 import {
   verifyNombaWebhookSignature,
@@ -84,6 +85,18 @@ async function handleNombaWebhook(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    let transactionAmountKobo: number;
+    try {
+      transactionAmountKobo = nombaWebhookAmountToKobo(transactionAmount);
+    } catch {
+      logger.warn(
+        { transactionAmount, transactionId },
+        "Webhook payload has invalid transactionAmount",
+      );
+      res.status(400).json({ error: "Invalid transactionAmount" });
+      return;
+    }
+
     const isNew = await claimEvent(transactionId);
 
     Sentry.addBreadcrumb({
@@ -120,7 +133,7 @@ async function handleNombaWebhook(req: Request, res: Response): Promise<void> {
     try {
       paymentEvent = await insertPaymentEvent({
         transactionId,
-        transactionAmount,
+        transactionAmount: transactionAmountKobo,
         virtualAccountId: customer?.virtual_account.id ?? null,
         businessId: customer?.business_id ?? null,
         isMatched: customer !== null,
