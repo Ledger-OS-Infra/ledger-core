@@ -9,6 +9,7 @@ import { reportingRouter } from "./routes/reporting";
 import { obligationsRouter } from "./routes/obligations";
 import { billingRouter } from "./routes/billing";
 import { customersRouter } from "./routes/customers";
+import { portalRouter } from "./routes/portal";
 import { businessesRouter } from "./routes/businesses";
 import { requestLogger } from "./middleware/requestLogger";
 import { errorHandler } from "./middleware/errorHandler";
@@ -46,6 +47,7 @@ export function createApp(): Express {
   app.get("/", healthHandler);
 
   app.use("/auth", authRouter);
+  app.use("/portal", portalRouter);
   app.use(webhooksRouter);
 
   app.use("/businesses", requireAuth, businessesRouter);

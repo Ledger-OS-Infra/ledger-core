@@ -23,6 +23,10 @@ export const env = {
   jwtAccessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? "30m",
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
 
+   // Customer-portal session tokens 
+  portalJwtSecret: process.env.PORTAL_JWT_SECRET ?? required("JWT_SECRET"),
+  portalTokenExpiresIn: process.env.PORTAL_TOKEN_EXPIRES_IN ?? "20m",
+
   // SMTP (Nodemailer) — e.g. Gmail or Outlook
   smtpHost: required("SMTP_HOST"),
   smtpPort: Number(process.env.SMTP_PORT ?? 587),
