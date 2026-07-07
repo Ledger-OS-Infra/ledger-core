@@ -1,5 +1,5 @@
 import cors from "cors";
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import * as Sentry from "@sentry/node";
 import { env } from "./config/env";
 import { AppError } from "./lib/AppError";
@@ -38,13 +38,12 @@ export function createApp(): Express {
   app.use(requestLogger);
   app.use(express.json());
 
-  app.get("/health", (_req, res) => {
+  const healthHandler = (_req: Request, res: Response) => {
     res.json({ status: "ok" });
-  });
+  };
 
-  app.get("/", (_req, res) => {
-    res.json({ message: "Hello World" });
-  });
+  app.get("/health", healthHandler);
+  app.get("/", healthHandler);
 
   app.use("/auth", authRouter);
   app.use(webhooksRouter);
