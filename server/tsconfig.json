@@ -12,6 +12,7 @@
     "resolveJsonModule": true
   },
   "include": [
+    "index.ts",
     "main.ts",
     "api/**/*.ts",
     "app.ts",
