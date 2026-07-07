@@ -32,8 +32,9 @@ customersRouter.post(
       const body = req.body as {
         business_id: string;
         full_name: string;
-        email?: string | null;
+        email: string;
         phone?: string | null;
+        password: string;
         metadata?: Record<string, unknown>;
       };
 
@@ -42,6 +43,7 @@ customersRouter.post(
         fullName: body.full_name,
         email: body.email,
         phone: body.phone,
+        password: body.password,
         metadata: body.metadata,
       });
 

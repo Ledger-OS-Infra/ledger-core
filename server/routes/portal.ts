@@ -9,10 +9,21 @@ import {
   listCustomerOutstandingObligations,
   type CustomerLedgerHistoryRow,
 } from "../db/reporting";
+import {
+    portalLookupBody,
+    portalLoginBody,
+    portalForgotPasswordBody,
+    portalResetPasswordBody,
+  } from "../lib/schemas/portal";
+  import {
+    portalLookupRateLimit,
+    portalLoginRateLimit,
+    portalForgotPasswordRateLimit,
+    portalResetPasswordRateLimit,
+  } from "../middleware/rateLimit";
+  import * as customerAuthService from "../services/customerAuth";
 import { AppError } from "../lib/AppError";
 import { koboToNgn } from "../lib/money";
-import { portalLookupBody } from "../lib/schemas/portal";
-import { portalLookupRateLimit } from "../middleware/rateLimit";
 import { requirePortalAuth } from "../middleware/requirePortalAuth";
 import { validate } from "../middleware/validate";
 import { signPortalToken } from "../services/portalAuth";
@@ -78,48 +89,58 @@ async function fetchAllLedgerEntries(
   return entries;
 }
 
-// ── POST /portal/lookup — public ────────────────────────────────────
+// ── POST /portal/login — email + password ────────────────────────────
 
 portalRouter.post(
-  "/lookup",
-  portalLookupRateLimit,
-  validate({ body: portalLookupBody }),
-  async (req, res, next) => {
-    try {
-      const { account_number, email } = req.body as {
-        account_number: string;
-        email: string;
-      };
-
-      const customer = await findCustomerByAccountNumber(account_number);
-
-      const emailMatches =
-        !!customer?.email &&
-        customer.email.trim().toLowerCase() === email.trim().toLowerCase();
-
-      // Deliberately generic message for both "no such account" and
-      // "email doesn't match" — avoids leaking which part was wrong.
-      if (!customer || !emailMatches) {
-        throw new AppError(
-          "We couldn't find an account matching those details.",
-          401,
-          "PORTAL_LOOKUP_FAILED",
-        );
+    "/login",
+    portalLoginRateLimit,
+    validate({ body: portalLoginBody }),
+    async (req, res, next) => {
+      try {
+        const { email, password } = req.body as { email: string; password: string };
+        const result = await customerAuthService.customerLogin({ email, password });
+        res.json({ data: result });
+      } catch (err) {
+        next(err);
       }
+    },
+  );
+  
+  // ── POST /portal/forgot-password ──────────────────────────────────────
+  
+  portalRouter.post(
+    "/forgot-password",
+    portalForgotPasswordRateLimit,
+    validate({ body: portalForgotPasswordBody }),
+    async (req, res, next) => {
+      try {
+        const { email } = req.body as { email: string };
+        const result = await customerAuthService.customerForgotPassword(email);
+        res.json({ data: result });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+  
+  // ── POST /portal/reset-password ───────────────────────────────────────
+  
+  portalRouter.post(
+    "/reset-password",
+    portalResetPasswordRateLimit,
+    validate({ body: portalResetPasswordBody }),
+    async (req, res, next) => {
+      try {
+        const { token, password } = req.body as { token: string; password: string };
+        const result = await customerAuthService.customerResetPassword({ token, password });
+        res.json({ data: result });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
 
-      const token = signPortalToken(customer.id);
 
-      res.json({
-        data: {
-          token,
-          expires_in: env.portalTokenExpiresIn,
-        },
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
-);
 
 // ── GET /portal/account — requires portal session token ─────────────
 

@@ -24,6 +24,16 @@ interface AddCustomerFormValues {
   fullName: string
   email: string
   phone: string
+  password: string
+}
+
+function generateTempPassword(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
+  let out = ''
+  for (let i = 0; i < 10; i++) {
+    out += chars[Math.floor(Math.random() * chars.length)]
+  }
+  return out
 }
 
 function validateCustomerForm(
@@ -33,8 +43,11 @@ function validateCustomerForm(
   if (!values.fullName.trim()) {
     newErrors.fullName = 'Full name is required'
   }
-  if (values.email.trim() && !values.email.includes('@')) {
+  if (!values.email.trim() || !values.email.includes('@')) {
     newErrors.email = 'Please enter a valid email'
+  }
+  if (!values.password || values.password.length < 8) {
+    newErrors.password = 'Password must be at least 8 characters'
   }
   return newErrors
 }
@@ -58,12 +71,13 @@ export function AddCustomerModal({ businessId }: { businessId: string }) {
     isLoading,
     setIsLoading,
     handleChange,
+    setValues,
     validateForm,
     hasErrors,
     setGeneralError,
     reset,
   } = useFormValidation<AddCustomerFormValues>(
-    { fullName: '', email: '', phone: '' },
+    { fullName: '', email: '', phone: '', password: '' },
     validateCustomerForm,
   )
 
@@ -75,7 +89,6 @@ export function AddCustomerModal({ businessId }: { businessId: string }) {
   const handleOpenChange = (next: boolean) => {
     setOpen(next)
     if (!next) {
-      // Reset once the dialog fully closes so the next open starts fresh.
       reset()
       setCreated(null)
       setCopied(false)
@@ -106,8 +119,9 @@ export function AddCustomerModal({ businessId }: { businessId: string }) {
       const customer = await customerClient.createCustomer({
         businessId,
         fullName: formData.fullName.trim(),
-        email: formData.email.trim() || null,
+        email: formData.email.trim(),
         phone: formData.phone.trim() || null,
+        password: formData.password,
       })
       await queryClient.invalidateQueries({ queryKey: queryKeys.customers(businessId) })
       await queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(businessId) })
@@ -140,7 +154,8 @@ export function AddCustomerModal({ businessId }: { businessId: string }) {
                 <span className="font-medium text-foreground">
                   {created.full_name}
                 </span>
-                . Payments to this account are auto-reconciled.
+                . We&apos;ve emailed them a login link and their temporary
+                password. Payments to this account are auto-reconciled.
               </DialogDescription>
             </DialogHeader>
 
@@ -189,7 +204,8 @@ export function AddCustomerModal({ businessId }: { businessId: string }) {
             <DialogHeader>
               <DialogTitle>Add Customer</DialogTitle>
               <DialogDescription>
-                Create a customer and generate their virtual account.
+                Create a customer, generate their virtual account, and send
+                them a portal invite by email.
               </DialogDescription>
             </DialogHeader>
 
@@ -208,7 +224,7 @@ export function AddCustomerModal({ businessId }: { businessId: string }) {
               />
 
               <FormInput
-                label="Email (optional)"
+                label="Email"
                 name="email"
                 type="email"
                 placeholder="billing@acme.com"
@@ -228,6 +244,38 @@ export function AddCustomerModal({ businessId }: { businessId: string }) {
                 error={errors.phone}
                 disabled={isLoading}
               />
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="password" className="text-sm font-medium">
+                    Temporary password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setValues((prev) => ({ ...prev, password: generateTempPassword() }))
+                    }
+                    className="text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+                    disabled={isLoading}
+                  >
+                    Generate
+                  </button>
+                </div>
+                <FormInput
+                  name="password"
+                  type="text"
+                  placeholder="At least 8 characters"
+                  value={formData.password}
+                  onChange={handleChange}
+                  error={errors.password}
+                  disabled={isLoading}
+                />
+                <p className="text-xs text-muted-foreground">
+                  We&apos;ll email this to the customer along with their
+                  login link. They&apos;ll be prompted to set a new password
+                  via &quot;Forgot password&quot; on first login.
+                </p>
+              </div>
 
               <ButtonCustom
                 type="submit"

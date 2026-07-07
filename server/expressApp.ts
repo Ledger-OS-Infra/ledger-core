@@ -22,6 +22,7 @@ export function createApp(): Express {
   const corsOrigins = new Set([env.frontendUrl]);
   if (env.nodeEnv !== "production") {
     corsOrigins.add("http://localhost:3000");
+    corsOrigins.add("http://localhost:3001"); 
   }
 
   app.use(

@@ -4,31 +4,25 @@ import {
   downloadStatement,
   fetchAccount,
   fetchHistory,
+  forgotPassword,
   getPortalToken,
-  lookupAccount,
+  loginCustomer,
+  resetPassword,
   setPortalToken,
 } from "@/lib/api";
-
-// ── Query keys ──────────────────────────────────────────────────────────
 
 export const portalKeys = {
   account: ["portal", "account"] as const,
   history: ["portal", "history"] as const,
 };
 
-// ── Account overview ─────────────────────────────────────────────────
-
 export function useAccountQuery() {
   return useQuery({
     queryKey: portalKeys.account,
     queryFn: async () => (await fetchAccount()).data,
-    // No point calling the API if there's no session token yet — the
-    // page will redirect to the lookup screen in that case.
     enabled: Boolean(getPortalToken()),
   });
 }
-
-// ── Full ledger history ──────────────────────────────────────────────
 
 export function useHistoryQuery() {
   return useQuery({
@@ -38,25 +32,34 @@ export function useHistoryQuery() {
   });
 }
 
-// ── Lookup (account number + email → session token) ─────────────────
+// ── Login (email + password → session token) ──────────────────────────
 
-export function useLookupMutation() {
+export function useLoginMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      accountNumber,
-      email,
-    }: {
-      accountNumber: string;
-      email: string;
-    }) => lookupAccount(accountNumber, email),
+    mutationFn: ({ email, password }: { email: string; password: string }) =>
+      loginCustomer(email, password),
     onSuccess: ({ data }) => {
       setPortalToken(data.token);
-      // Drop any stale account/history data from a previous session.
       queryClient.removeQueries({ queryKey: portalKeys.account });
       queryClient.removeQueries({ queryKey: portalKeys.history });
     },
+  });
+}
+
+// ── Forgot / reset password ────────────────────────────────────────────
+
+export function useForgotPasswordMutation() {
+  return useMutation({
+    mutationFn: (email: string) => forgotPassword(email),
+  });
+}
+
+export function useResetPasswordMutation() {
+  return useMutation({
+    mutationFn: ({ token, password }: { token: string; password: string }) =>
+      resetPassword(token, password),
   });
 }
 

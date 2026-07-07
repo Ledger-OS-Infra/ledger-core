@@ -35,6 +35,7 @@ export const env = {
   smtpPass: required("SMTP_PASS"),
   emailFrom: process.env.EMAIL_FROM ?? "Ledger-Core <rajiabdullahi907@gmail.com>",
   frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:3000",
+  customerPortalUrl: process.env.CUSTOMER_PORTAL_URL ?? "http://localhost:3001",
 
   authRequireEmailVerification:
     process.env.AUTH_REQUIRE_EMAIL_VERIFICATION !== "false",

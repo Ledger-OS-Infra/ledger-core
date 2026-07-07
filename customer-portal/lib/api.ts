@@ -47,16 +47,30 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-// ── Lookup ────────────────────────────────────────────────────────────
+// ── Auth ──────────────────────────────────────────────────────────────
 
-export async function lookupAccount(accountNumber: string, email: string) {
+export async function loginCustomer(email: string, password: string) {
   return request<{ data: { token: string; expires_in: string } }>(
-    "/portal/lookup",
+    "/portal/login",
     {
       method: "POST",
-      body: JSON.stringify({ account_number: accountNumber, email }),
+      body: JSON.stringify({ email, password }),
     },
   );
+}
+
+export async function forgotPassword(email: string) {
+  return request<{ data: { message: string } }>("/portal/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPassword(token: string, password: string) {
+  return request<{ data: { message: string } }>("/portal/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token, password }),
+  });
 }
 
 // ── Account overview ─────────────────────────────────────────────────
