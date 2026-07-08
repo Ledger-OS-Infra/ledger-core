@@ -1,8 +1,8 @@
-# Ledger-Core — PostgreSQL schema design
+# LedgerCore — PostgreSQL schema design
 
 Transactional schema for customer virtual accounts, payment obligations, inbound transfers, reconciliation, and immutable ledger entries.
 
-**Implementation:** `server/db/migrations/20260627100000_initial_schema.ts`  
+**Migrations:** `20260627100000_initial_schema.ts`, `20260703000000_auth_tables.ts`, `20260703000001_businesses_add_sub_account.ts`, `20260704000000_performance_indexes.ts`  
 **Amounts:** kobo (`BIGINT`) — Nomba uses kobo; 1 NGN = 100 kobo (e.g. ₦1,500 → `150000`)  
 **Status:** MVP single-business; `business_id` on all tenant-scoped tables for future multi-business SaaS.
 
@@ -36,6 +36,7 @@ erDiagram
     businesses {
         uuid id PK
         string name
+        string nomba_sub_account_id
         json metadata
         datetime created_at
         datetime updated_at
@@ -234,7 +235,7 @@ Immutable debit/credit row — source of truth for allocation history (TASK.md �
 
 | Column             | Type                | Notes                                      |
 |--------------------|---------------------|--------------------------------------------|
-| `entry_type`       | `ledger_entry_type` | `DEBIT` \| `CREDIT`                        |
+| `entry_type`       | `ledger_entry_type` | `PAYMENT_APPLIED` \| `PARTIAL_PAYMENT` \| `OVERPAYMENT_CREDIT` \| `WALLET_APPLIED` |
 | `amount`           | BIGINT              | Entry amount (always positive)             |
 | `balance_after`    | BIGINT              | Running outstanding or wallet balance snap |
 | `obligation_id`    | UUID FK             | Nullable — wallet credits omit obligation  |
@@ -257,14 +258,73 @@ Wallet balance changes are also reflected in `ledger_entries` for a full audit t
 
 ---
 
+### User
+
+Business operator account. One user may belong to multiple businesses via `business_members`.
+
+| Column              | Type    | Notes |
+|---------------------|---------|-------|
+| `email`             | TEXT UK | Login identifier |
+| `password_hash`     | TEXT    | Bcrypt hash |
+| `full_name`         | TEXT    | |
+| `is_email_verified` | BOOLEAN | Must verify before accessing protected routes |
+
+---
+
+### AuthToken
+
+Email verification and password reset tokens (short-lived, single-use).
+
+| Column       | Type        | Notes |
+|--------------|-------------|-------|
+| `user_id`    | UUID FK     | |
+| `token_hash` | TEXT UK     | Hashed token stored; raw token sent to user |
+| `type`       | TEXT        | `EMAIL_VERIFICATION` \| `PASSWORD_RESET` |
+| `expires_at` | TIMESTAMPTZ | |
+| `used_at`    | TIMESTAMPTZ | Nullable — set on redemption |
+
+---
+
+### RefreshToken
+
+JWT refresh tokens for session management. Rotated on each use.
+
+| Column       | Type        | Notes |
+|--------------|-------------|-------|
+| `user_id`    | UUID FK     | |
+| `token_hash` | TEXT UK     | |
+| `expires_at` | TIMESTAMPTZ | 7-day TTL |
+| `revoked_at` | TIMESTAMPTZ | Nullable — set on logout or rotation |
+
+---
+
+### BusinessMember
+
+Many-to-many join between users and businesses with role assignment.
+
+| Column        | Type    | Notes |
+|---------------|---------|-------|
+| `user_id`     | UUID FK | |
+| `business_id` | UUID FK | |
+| `role`        | TEXT    | `OWNER` \| `ADMIN` \| `MEMBER` |
+
+---
+
 ## Enums
 
 ```sql
 customer_status    ACTIVE | INACTIVE
 obligation_type    INVOICE | SUBSCRIPTION | FEE | LEVY | CUSTOM
 obligation_status  UNPAID | PARTIAL | PAID | OVERDUE
-ledger_entry_type  DEBIT | CREDIT
+ledger_entry_type  PAYMENT_APPLIED | PARTIAL_PAYMENT | OVERPAYMENT_CREDIT | WALLET_APPLIED
 ```
+
+| Entry type | When it is written |
+|---|---|
+| `PAYMENT_APPLIED` | Full payment — obligation moves to PAID |
+| `PARTIAL_PAYMENT` | Payment < outstanding — obligation stays PARTIAL |
+| `OVERPAYMENT_CREDIT` | Portion of payment that settles the obligation (overpay scenario) |
+| `WALLET_APPLIED` | Excess credited to customer wallet, or wallet drawn down against an obligation |
 
 ---
 
@@ -305,21 +365,25 @@ Enforced in code via repository/query conventions — only `INSERT` paths for le
 
 ```mermaid
 flowchart LR
-    WH[Nomba webhook] --> PE[PaymentEvent INSERT]
-    PE --> VA{Resolve VirtualAccount}
-    VA --> C[Customer]
-    C --> RE[Reconciliation engine]
-    RE --> PO[PaymentObligation UPDATE]
-    RE --> LE[LedgerEntry INSERT]
-    RE --> CW[CustomerWallet UPDATE]
+    WH[Nomba webhook POST] --> SIG{Verify HMAC}
+    SIG --> IDEM{Idempotency check}
+    IDEM --> PE[PaymentEvent INSERT]
+    PE --> Q[BullMQ queue]
+    Q --> W[Reconciliation Worker]
+    W --> MATCH[matchPayment]
+    MATCH --> ALLOC[allocatePayment]
+    ALLOC --> PO[PaymentObligation UPDATE]
+    ALLOC --> LE[LedgerEntry INSERT]
+    ALLOC --> CW[CustomerWallet UPDATE]
 ```
 
-1. Webhook creates `payment_event` (idempotency check on `idempotency_key`).
-2. Customer resolved via `virtual_accounts.account_number`.
-3. Engine matches obligation (exact amount → FIFO).
-4. Engine updates `payment_obligations.amount_paid` / `status`.
-5. Engine inserts `ledger_entries` for each allocation.
-6. Overpayment inserts wallet `ledger_entry` and updates `customer_wallets.balance`.
+1. Webhook signature verified via HMAC-SHA512.
+2. Redis idempotency check on `idempotency_key` — duplicate deliveries are no-ops.
+3. Customer resolved via `virtual_accounts.account_number`.
+4. `payment_event` inserted; BullMQ job enqueued asynchronously.
+5. Reconciliation worker runs `matchPayment()` — exact amount → reference code → FIFO.
+6. `allocatePayment()` runs in a single DB transaction: updates `payment_obligations.amount_paid` / `status`, inserts `ledger_entries`.
+7. Overpayment: additional `WALLET_APPLIED` ledger entry + `customer_wallets.balance` update in the same transaction.
 
 ---
 
@@ -366,12 +430,12 @@ SELECT id FROM payment_events WHERE idempotency_key = $1;
 
 ---
 
-## Team review checklist
+## Schema checklist
 
-- [ ] Entity set covers invoice + subscription (MBU) flows from TASK.md §6
-- [ ] `business_id` scoping supports future multi-tenant without migration
-- [ ] Indexes cover webhook lookup, obligation matching, and idempotency
-- [ ] Append-only ledger policy agreed for `ledger_entries` and `payment_events`
-- [ ] Amounts stored in kobo (matches Nomba webhook `transactionAmount`)
-
-**Reviewers:** leave a comment on issue #2 or PR to sign off.
+- [x] Entity set covers invoice + subscription (MBU) flows
+- [x] `business_id` scoping supports future multi-tenant without migration
+- [x] Indexes cover webhook lookup, obligation matching, and idempotency
+- [x] Append-only ledger policy enforced for `ledger_entries` and `payment_events`
+- [x] Amounts stored in kobo (matches Nomba webhook `transactionAmount`)
+- [x] Auth tables (`users`, `auth_tokens`, `refresh_tokens`, `business_members`) added
+- [x] `ledger_entry_type` enum expanded to reflect allocation semantics

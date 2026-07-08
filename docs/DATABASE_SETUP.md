@@ -8,13 +8,14 @@ Steps to run Ledger-Core Postgres locally (Docker) or on Aiven, apply migrations
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for local dev)
 - Node.js 20+
-- Repo cloned and root dependencies installed:
+- pnpm (`npm install -g pnpm`) — used by the frontend
+- Repo cloned and dependencies installed:
 
 ```bash
-git clone https://github.com/Ledger-OS-Infra/ledger--raas.git
+git clone https://github.com/Ledger-OS-Infra/ledger-core.git
 cd ledger-core
-npm install
 npm install --prefix server
+pnpm install --prefix frontend
 ```
 
 ---
@@ -218,12 +219,16 @@ The `server/db/seeds/dev.ts` script remains in the repo for optional local use (
 | Table | Purpose |
 |-------|---------|
 | `businesses` | Tenant / business profile |
+| `users` | Business operator accounts |
+| `auth_tokens` | Email verification and password reset tokens |
+| `refresh_tokens` | JWT refresh token store |
+| `business_members` | User ↔ business role assignments |
 | `customers` | Customer profiles |
 | `virtual_accounts` | Nomba VA mapped to customer |
 | `billing_rules` | Recurring obligation config (e.g. monthly MBU) |
 | `payment_obligations` | Invoices, subscriptions, fees |
 | `payment_events` | Inbound transfers (webhook idempotency key) |
-| `ledger_entries` | Immutable debit/credit audit trail |
+| `ledger_entries` | Immutable allocation audit trail |
 | `customer_wallets` | Unallocated / overpayment credit |
 
 Reporting views: `v_customer_balance_summary`, `v_obligation_aging`, `v_business_metrics`, `v_obligation_payment_history`, `v_customer_ledger_history`, `v_obligation_detail`.
