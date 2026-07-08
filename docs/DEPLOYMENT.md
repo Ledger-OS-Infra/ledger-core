@@ -43,7 +43,10 @@ cp server/.env.example server/.env
 | Variable | Used by | Notes |
 |----------|---------|-------|
 | `PORT` | api | Defaults to `3050` |
+| `NODE_ENV` | api | Set to `production` |
 | `JWT_SECRET` | api | Secret — do not commit |
+| `JWT_ACCESS_EXPIRES_IN` | api | e.g. `30m` |
+| `JWT_REFRESH_EXPIRES_IN` | api | e.g. `7d` |
 | `NOMBA_ENV` | api | `sandbox` for the hackathon |
 | `NOMBA_API_BASE_URL` | api | Nomba sandbox base URL |
 | `NOMBA_PARENT_ACCOUNT_ID` | api | From Nomba dashboard |
@@ -52,6 +55,7 @@ cp server/.env.example server/.env
 | `NOMBA_CLIENT_SECRET` | api | Secret — do not commit |
 | `NOMBA_WEBHOOK_SECRET` | api | Secret — used to verify inbound webhooks |
 | `NOMBA_WEBHOOK_PATH` | api | Defaults to `/webhooks/nomba` |
+| `SENTRY_DSN` | api | Optional — Sentry error tracking (Node.js project DSN) |
 
 `DATABASE_URL` and `REDIS_URL` in `server/.env` are used for **local (non-Docker) development only**. When running via `docker-compose.prod.yml`, the compose file overrides both to point at the `postgres` and `redis` containers — leave them as-is in `.env`.
 
@@ -62,7 +66,8 @@ Optional, set in your shell or a root `.env` file before running compose:
 | `POSTGRES_USER` | `user` | Postgres container credentials |
 | `POSTGRES_PASSWORD` | `password` | Postgres container credentials |
 | `POSTGRES_DB` | `ledger_core` | Postgres database name |
-| `VITE_API_URL` | `http://localhost:3050` | Baked into the web build at build time — the URL the dashboard calls |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:3050` | Baked into the Next.js frontend build — the URL the dashboard calls |
+| `NEXT_PUBLIC_SENTRY_DSN` | — | Optional — Sentry error tracking for the frontend (Next.js project DSN) |
 
 **Never commit `server/.env`.** It is already gitignored.
 
