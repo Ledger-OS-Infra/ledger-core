@@ -226,4 +226,10 @@ See [CONTRIBUTION_GUIDE.md](CONTRIBUTION_GUIDE.md) for branch naming, commit con
 
 ---
 
+## Test credentials
+Email: rajiabdullahi907@yahoo.com
+password: 0809ja4lifE#
+
+---
+
 *Ledger-Core — Nomba x DevCareer Hackathon 2026*
