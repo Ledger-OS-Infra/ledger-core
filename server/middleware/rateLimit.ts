@@ -64,3 +64,22 @@ export const refreshRateLimit = rateLimit(
 export const resetPasswordRateLimit = rateLimit(
   { windowSeconds: 60 * 60, maxAttempts: 10, keyPrefix: "reset-pw" },
 );
+
+export const portalLookupRateLimit = rateLimit(
+  { windowSeconds: 15 * 60, maxAttempts: 10, keyPrefix: "portal-lookup" },
+  "account_number",
+);
+
+export const portalLoginRateLimit = rateLimit(
+  { windowSeconds: 15 * 60, maxAttempts: 10, keyPrefix: "portal-login" },
+  "email",
+);
+
+export const portalForgotPasswordRateLimit = rateLimit(
+  { windowSeconds: 60 * 60, maxAttempts: 5, keyPrefix: "portal-forgot-pw" },
+  "email",
+);
+
+export const portalResetPasswordRateLimit = rateLimit(
+  { windowSeconds: 60 * 60, maxAttempts: 10, keyPrefix: "portal-reset-pw" },
+);

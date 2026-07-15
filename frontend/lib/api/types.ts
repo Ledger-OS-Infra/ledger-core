@@ -32,10 +32,11 @@ export interface CustomerWithVirtualAccount {
 }
 
 export interface CreateCustomerRequest {
-  businessId: string
-  fullName: string
-  email?: string | null
+  businessId: string;
+  fullName: string;
+  email: string
   phone?: string | null
+  password: string
   metadata?: Record<string, unknown>
 }
 

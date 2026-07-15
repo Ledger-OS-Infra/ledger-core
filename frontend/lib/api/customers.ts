@@ -22,6 +22,7 @@ export const customerClient = {
       full_name: input.fullName,
       email: input.email,
       phone: input.phone,
+      password: input.password,
       metadata: input.metadata,
     })
   },
