@@ -2,7 +2,7 @@
 
 PostgreSQL views for dashboard and API reporting. Amounts are **kobo** integers (1 NGN = 100 kobo).
 
-**Migrations:** `20260627100001_reporting_views.ts`, `20260627100002_update_reporting_views.ts`, `20260630100000_reporting_detail_views.ts`  
+**Migrations:** `20260627100001_reporting_views.ts`, `20260627100002_update_reporting_views.ts`, `20260630100000_reporting_detail_views.ts`, `20260704000000_performance_indexes.ts`  
 **API:** `GET /reporting/*` (see [API endpoints](#api-endpoints))  
 **OpenAPI:** [`docs/openapi.yaml`](./openapi.yaml)
 
