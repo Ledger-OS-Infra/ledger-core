@@ -23,6 +23,10 @@ export const env = {
   jwtAccessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? "30m",
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
 
+   // Customer-portal session tokens 
+  portalJwtSecret: process.env.PORTAL_JWT_SECRET ?? required("JWT_SECRET"),
+  portalTokenExpiresIn: process.env.PORTAL_TOKEN_EXPIRES_IN ?? "20m",
+
   // SMTP (Nodemailer) — e.g. Gmail or Outlook
   smtpHost: required("SMTP_HOST"),
   smtpPort: Number(process.env.SMTP_PORT ?? 587),
@@ -31,6 +35,7 @@ export const env = {
   smtpPass: required("SMTP_PASS"),
   emailFrom: process.env.EMAIL_FROM ?? "Ledger-Core <rajiabdullahi907@gmail.com>",
   frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:3000",
+  customerPortalUrl: process.env.CUSTOMER_PORTAL_URL ?? "http://localhost:3001",
 
   authRequireEmailVerification:
     process.env.AUTH_REQUIRE_EMAIL_VERIFICATION !== "false",

@@ -36,6 +36,7 @@ export interface CreateCustomerInput {
   fullName: string;
   email?: string | null;
   phone?: string | null;
+  passwordHash: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -136,15 +137,16 @@ export async function insertCustomer(
   client: DbClient = pool,
 ): Promise<CustomerRow> {
   const { rows } = await client.query<CustomerRow>(
-    `INSERT INTO customers (id, business_id, full_name, email, phone, metadata)
-     VALUES ($1, $2, $3, $4, $5, $6)
-     RETURNING *`,
+    `INSERT INTO customers (id, business_id, full_name, email, phone, password_hash, metadata)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING id, business_id, full_name, email, phone, status, metadata, created_at, updated_at`,
     [
       input.id,
       input.businessId,
       input.fullName,
       input.email ?? null,
       input.phone ?? null,
+      input.passwordHash,
       JSON.stringify(input.metadata ?? {}),
     ],
   );
@@ -298,4 +300,32 @@ export async function updateCustomer(
   }
 
   return getCustomerById(customerId);
+}
+
+export interface CustomerWithPasswordHash extends CustomerRow {
+  password_hash: string | null;
+}
+
+export async function findCustomerByEmailWithPassword(
+  email: string,
+): Promise<CustomerWithPasswordHash | null> {
+  const { rows } = await pool.query<CustomerWithPasswordHash>(
+    `SELECT id, business_id, full_name, email, phone, status, metadata, created_at, updated_at, password_hash
+     FROM customers
+     WHERE lower(email) = lower($1)
+     LIMIT 1`,
+    [email],
+  );
+  const row = rows[0];
+  return row ? { ...mapCustomerRow(row), password_hash: row.password_hash } : null;
+}
+
+export async function updateCustomerPasswordHash(
+  customerId: string,
+  passwordHash: string,
+): Promise<void> {
+  await pool.query(
+    `UPDATE customers SET password_hash = $1, updated_at = NOW() WHERE id = $2`,
+    [passwordHash, customerId],
+  );
 }

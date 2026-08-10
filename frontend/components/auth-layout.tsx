@@ -12,7 +12,7 @@ interface AuthLayoutProps {
 }
 
 export function AuthLayout({ title, description, children }: AuthLayoutProps) {
-  const { theme, toggleTheme } = useTheme()
+  const { theme } = useTheme()
   const resolvedTheme = theme ?? 'light'
   const logoSrc = resolvedTheme === 'dark' ? '/ledger_core_L_white_64.png' : '/ledger_core_L_dark_text_64.png'
 

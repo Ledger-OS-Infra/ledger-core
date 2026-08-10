@@ -26,7 +26,7 @@ export function ngnToKobo(ngn: number): number {
 
 /** Convert kobo to whole naira for display. E.g. 150_000 kobo → ₦1,500. */
 export function koboToNgn(kobo: number): number {
-  assertWholeInteger(kobo, "Kobo amount");
+  assertWholeInteger(kobo, "Kobo amount",0);
   return kobo / KOBO_PER_NGN;
 }
 

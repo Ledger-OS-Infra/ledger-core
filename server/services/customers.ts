@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { AppError } from "../lib/AppError";
 import { logger } from "../lib/logger";
 import { pool } from "../db/pool";
+import bcrypt from "bcrypt";
 import {
   businessExists,
   getCustomerById,
@@ -15,14 +16,20 @@ import type { NombaClient } from "../nomba/client";
 import { createNombaClientFromEnv } from "../nomba/client";
 import { NombaApiError } from "../nomba/errors";
 import type { VirtualAccount } from "../nomba/types";
+import { getBusinessById } from "../db/businesses";
+import { sendCustomerWelcomeEmail } from "../lib/email";
+
+const BCRYPT_ROUNDS = 12;
 
 export interface CreateCustomerRequest {
   businessId: string;
   fullName: string;
-  email?: string | null;
+  email: string;
   phone?: string | null;
+  password: string;
   metadata?: Record<string, unknown>;
 }
+
 
 function nombaAccountRefForCustomer(customerId: string): string {
   return `lc_${customerId.replace(/-/g, "")}`;
@@ -87,6 +94,8 @@ async function compensateOrphanedVirtualAccount(
   }
 }
 
+// ... (nombaAccountRefForCustomer, mapNombaVirtualAccount, mapNombaError, compensateOrphanedVirtualAccount unchanged) ...
+
 export class CustomerService {
   constructor(private readonly nomba: NombaClient) {}
 
@@ -99,6 +108,7 @@ export class CustomerService {
 
     const customerId = randomUUID();
     const accountRef = nombaAccountRefForCustomer(customerId);
+    const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
     const client = await pool.connect();
     let provisionedAccountRef: string | null = null;
 
@@ -111,6 +121,7 @@ export class CustomerService {
         fullName: input.fullName,
         email: input.email,
         phone: input.phone,
+        passwordHash,
         metadata: input.metadata,
       };
 
@@ -164,6 +175,20 @@ export class CustomerService {
       );
     }
 
+    // Best-effort — a failed email shouldn't fail customer creation
+    // (mirrors the pattern used for sendVerificationEmail in services/auth.ts).
+    try {
+      const business = await getBusinessById(input.businessId);
+      await sendCustomerWelcomeEmail(
+        input.email,
+        input.fullName,
+        input.password,
+        business?.name ?? "Ledger-Core",
+      );
+    } catch (err) {
+      logger.error({ err, customerId }, "Failed to send customer welcome email");
+    }
+
     return created;
   }
 }
@@ -177,7 +202,6 @@ export function getCustomerService(): CustomerService {
   return defaultService;
 }
 
-/** Test hook — inject mocks without touching module-level singleton in tests. */
 export function createCustomerService(nomba: NombaClient): CustomerService {
   return new CustomerService(nomba);
 }

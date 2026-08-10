@@ -10,13 +10,9 @@ export const customerStatusSchema = z.enum(["ACTIVE", "INACTIVE"]);
 export const createCustomerBody = z.object({
   business_id: uuidParam,
   full_name: z.string().trim().min(1, "full_name is required"),
-  email: z
-    .string()
-    .trim()
-    .email("Invalid email")
-    .optional()
-    .nullable(),
+  email: z.string().trim().email("Invalid email"),
   phone: z.string().trim().min(1).optional().nullable(),
+  password: z.string().min(8, "Password must be at least 8 characters"),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
