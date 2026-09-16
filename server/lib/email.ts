@@ -1,8 +1,6 @@
 import { mailer } from "../config/mailer.config";
 import { env } from "../config/env";
 import { logger } from "./logger";
-import bcrypt from "bcrypt";
-import { BCRYPT_ROUNDS } from "../services/auth";
 
 
 interface SendEmailInput {
@@ -112,7 +110,6 @@ export async function sendCustomerWelcomeEmail(
 ): Promise<void> {
   const link = `${env.customerPortalUrl}/`;
 
-  const passwordHash = await bcrypt.hash(tempPassword, BCRYPT_ROUNDS);
 
   await sendEmail({
     to: email,
@@ -125,7 +122,7 @@ export async function sendCustomerWelcomeEmail(
         <p style="margin-top: 24px;"><strong>Your login details</strong></p>
         <p style="margin: 4px 0;">Email: ${email}</p>
         <p style="margin: 4px 0;">
-          Temporary password: <strong>${passwordHash}</strong>
+          Temporary password: <strong>${tempPassword}</strong>
           <br/>
           <span style="color: #b45309; font-size: 13px;">
             This is a temporary password. Please set a new one by clicking "Forgot password" on the login page before you continue.
