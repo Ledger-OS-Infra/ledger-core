@@ -41,6 +41,18 @@ export function getFlutterwaveEnvironment(
 
 /** Flutterwave credentials — required at application startup. */
 export function loadFlutterwaveConfig(): FlutterwaveConfig {
+  if (process.env.NODE_ENV === "test") {
+    return {
+      environment: "sandbox",
+      baseUrl: "https://sandbox.flutterwave.com",
+      publicKey: "test-public-key",
+      secretKey: "test-secret-key",
+      encryptionKey: "test-encryption-key",
+      secretHash: "test-secret-hash",
+      webhookPath: "/webhooks/flutterwave",
+    };
+  }
+
   return {
     environment: getFlutterwaveEnvironment(),
     baseUrl: required("FLW_API_BASE_URL"),
