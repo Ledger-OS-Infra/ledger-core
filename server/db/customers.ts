@@ -18,7 +18,7 @@ export interface CustomerRow {
 export interface VirtualAccountRow {
   id: string;
   customer_id: string;
-  nomba_account_ref: string;
+  account_ref: string;
   account_number: string;
   bank_name: string;
   bank_code: string | null;
@@ -27,7 +27,7 @@ export interface VirtualAccountRow {
 }
 
 export interface CustomerWithVirtualAccount extends CustomerRow {
-  virtual_account: VirtualAccountRow;
+  virtual_account: VirtualAccountRow | null;
 }
 
 export interface CreateCustomerInput {
@@ -43,7 +43,7 @@ export interface CreateCustomerInput {
 export interface CreateVirtualAccountInput {
   id: string;
   customerId: string;
-  nombaAccountRef: string;
+  accountRef: string;
   accountNumber: string;
   bankName: string;
   bankCode?: string | null;
@@ -60,14 +60,14 @@ export interface UpdateCustomerInput {
 type DbClient = Pool | PoolClient;
 
 interface CustomerWithVaQueryRow extends CustomerRow {
-  va_id: string;
-  va_customer_id: string;
-  va_nomba_account_ref: string;
-  va_account_number: string;
-  va_bank_name: string;
+  va_id: string | null;
+  va_customer_id: string | null;
+  va_account_ref: string | null;
+  va_account_number: string | null;
+  va_bank_name: string | null;
   va_bank_code: string | null;
-  va_is_active: boolean;
-  va_created_at: Date;
+  va_is_active: boolean | null;
+  va_created_at: Date | null;
 }
 
 function parseJsonColumn<T extends Record<string, unknown>>(value: unknown): T {
@@ -88,16 +88,18 @@ function mapCustomerWithVaRow(row: CustomerWithVaQueryRow): CustomerWithVirtualA
   const customer = mapCustomerRow(row);
   return {
     ...customer,
-    virtual_account: {
-      id: row.va_id,
-      customer_id: row.va_customer_id,
-      nomba_account_ref: row.va_nomba_account_ref,
-      account_number: row.va_account_number,
-      bank_name: row.va_bank_name,
-      bank_code: row.va_bank_code,
-      is_active: row.va_is_active,
-      created_at: row.va_created_at,
-    },
+    virtual_account: row.va_id
+      ? {
+          id: row.va_id,
+          customer_id: row.va_customer_id as string,
+          account_ref: row.va_account_ref as string,
+          account_number: row.va_account_number as string,
+          bank_name: row.va_bank_name as string,
+          bank_code: row.va_bank_code,
+          is_active: row.va_is_active as boolean,
+          created_at: row.va_created_at as Date,
+        }
+      : null,
   };
 }
 
@@ -114,14 +116,14 @@ const CUSTOMER_WITH_VA_SELECT = `
     c.updated_at,
     va.id AS va_id,
     va.customer_id AS va_customer_id,
-    va.nomba_account_ref AS va_nomba_account_ref,
+    va.account_ref AS va_account_ref,
     va.account_number AS va_account_number,
     va.bank_name AS va_bank_name,
     va.bank_code AS va_bank_code,
     va.is_active AS va_is_active,
     va.created_at AS va_created_at
   FROM customers c
-  JOIN virtual_accounts va ON va.customer_id = c.id
+  LEFT JOIN virtual_accounts va ON va.customer_id = c.id
 `;
 
 export async function businessExists(businessId: string): Promise<boolean> {
@@ -162,7 +164,7 @@ export async function insertVirtualAccount(
     `INSERT INTO virtual_accounts (
        id,
        customer_id,
-       nomba_account_ref,
+       account_ref,
        account_number,
        bank_name,
        bank_code
@@ -172,7 +174,7 @@ export async function insertVirtualAccount(
     [
       input.id,
       input.customerId,
-      input.nombaAccountRef,
+      input.accountRef,
       input.accountNumber,
       input.bankName,
       input.bankCode ?? null,

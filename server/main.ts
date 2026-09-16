@@ -10,7 +10,7 @@ const app = createApp();
 if (!process.env.VERCEL) {
   app.listen(env.port, () => {
     console.info(`Ledger-Core API listening on http://localhost:${env.port}`);
-    console.info(`Nomba environment: ${env.nombaEnvironment}`);
+    console.info(`Flutterwave environment: ${env.flutterwaveConfig.environment}`);
   });
 
   void startReconciliationWorker().catch((err) => {
