@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { nombaConfig, nombaEnvironment } from "./nombaEnv";
+import { loadFlutterwaveConfig } from "./flutterwaveEnv";
 
 dotenv.config();
 
@@ -11,13 +11,14 @@ function required(name: string): string {
   return value;
 }
 
+export const flutterwaveConfig = loadFlutterwaveConfig();
+
 export const env = {
   port: Number(process.env.PORT ?? 3050),
   nodeEnv: process.env.NODE_ENV ?? "development",
   databaseUrl: required("DATABASE_URL"),
   redisUrl: required("REDIS_URL"),
-  nombaWebhookSecret: required("NOMBA_WEBHOOK_SECRET"),
-  nombaWebhookPath: "/webhooks/nomba",
+  flutterwaveConfig,
 
   jwtSecret: required("JWT_SECRET"),
   jwtAccessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? "30m",
@@ -45,9 +46,6 @@ export const env = {
     process.env.NODE_ENV === "test" || process.env.MAIL_DRY_RUN === "true",
   /** Force real SMTP even when mailDryRun would apply (e.g. manual send check). */
   mailSend: process.env.MAIL_SEND === "true",
-
-  nombaSubAccountId: nombaConfig.subAccountId,
-  nombaEnvironment,
 };
 
-export { nombaConfig, nombaEnvironment };
+export type { FlutterwaveConfig } from "./flutterwaveEnv";

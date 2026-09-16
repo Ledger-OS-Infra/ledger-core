@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { env } from "../config/env";
 import { pool } from "../db/pool";
 import { insertBusiness } from "../db/businesses";
 import {
@@ -14,10 +13,8 @@ export interface Workspace {
 }
 
 /**
- * Creates a business/workspace for the given user and links it to the team's
- * shared Nomba sub-account. The creating user is added as the owner. All
- * customers (and their virtual accounts) added under this business will be
- * provisioned against `env.nombaSubAccountId`.
+ * Creates a business/workspace for the given user. The creating user is added
+ * as the owner.
  */
 export async function createBusiness(input: {
   userId: string;
@@ -33,7 +30,6 @@ export async function createBusiness(input: {
       {
         id: businessId,
         name: input.name,
-        nombaSubAccountId: env.nombaSubAccountId,
       },
       client,
     );
