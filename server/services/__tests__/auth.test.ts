@@ -16,7 +16,6 @@ vi.mock("../../config/env", () => ({
     emailFrom: "test@ledger.com",
     frontendUrl: "http://localhost:3000",
     authRequireEmailVerification: true,
-    nombaSubAccountId: "sub-account-test-id",
   },
 }));
 

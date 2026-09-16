@@ -29,7 +29,7 @@ import {
 import { listBusinessMembershipsByUser } from "../db/businessMembers";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../lib/email";
 
-const BCRYPT_ROUNDS = 12;
+export const BCRYPT_ROUNDS = 12;
 const VERIFY_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 
@@ -102,8 +102,7 @@ export async function signup(input: {
     );
 
     // A business/workspace is NOT created here — the user creates one
-    // explicitly after logging in (see POST /businesses). Each workspace is
-    // tied to the team's shared Nomba sub-account.
+    // explicitly after logging in (see POST /businesses).
 
     await invalidateTokensByUserAndType(userId, "email_verify", client);
     await insertAuthToken(

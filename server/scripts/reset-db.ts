@@ -58,7 +58,7 @@ async function clearRedisIdempotencyKeys(): Promise<number> {
     const [nextCursor, keys] = await redis.scan(
       cursor,
       "MATCH",
-      "idempotency:nomba-event:*",
+      "idempotency:payment-event:*",
       "COUNT",
       100,
     );
@@ -90,7 +90,7 @@ async function main(): Promise<void> {
   console.info("Postgres: all tables truncated.");
 
   const redisDeleted = await clearRedisIdempotencyKeys();
-  console.info(`Redis: cleared ${redisDeleted} Nomba idempotency key(s).`);
+  console.info(`Redis: cleared ${redisDeleted} payment-event idempotency key(s).`);
 
   await redis.quit();
 

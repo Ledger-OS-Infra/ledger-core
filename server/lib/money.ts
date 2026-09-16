@@ -1,4 +1,4 @@
-/** Nomba (and Ledger-Core) store NGN amounts in kobo — 1 NGN = 100 kobo. */
+/** Ledger-Core stores NGN amounts in kobo — 1 NGN = 100 kobo. */
 export const KOBO_PER_NGN = 100;
 export const MINIMUM_AMOUNT = 1;
 
@@ -18,7 +18,7 @@ function assertWholeInteger(
   }
 }
 
-/** Convert whole naira to kobo for storage / Nomba API calls. E.g. ₦1,500 → 150_000. */
+/** Convert whole naira to kobo for storage. E.g. ₦1,500 → 150_000. */
 export function ngnToKobo(ngn: number): number {
   assertWholeInteger(ngn, "NGN amount");
   return ngn * KOBO_PER_NGN;
@@ -30,7 +30,7 @@ export function koboToNgn(kobo: number): number {
   return kobo / KOBO_PER_NGN;
 }
 
-/** Nomba webhook `transactionAmount` and API amount fields are kobo integers. */
+/** Stored and API amount fields are kobo integers. */
 export function assertKoboAmount(amount: number, field = "amount"): void {
   assertWholeInteger(amount, field, 1);
 }

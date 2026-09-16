@@ -189,7 +189,7 @@ portalRouter.get("/account", requirePortalAuth, async (req, res, next) => {
         customer: {
           id: customer.id,
           name: customer.full_name,
-          virtual_account: customer.virtual_account.account_number,
+          virtual_account: customer.virtual_account?.account_number ?? null,
           initials: initialsFromName(customer.full_name),
         },
         balance: {
@@ -236,7 +236,8 @@ portalRouter.get("/statement.pdf", requirePortalAuth, async (req, res, next) => 
       fetchAllLedgerEntries(customerId),
     ]);
 
-    const filename = `statement-${customer.virtual_account.account_number}.pdf`;
+    const accountNumber = customer.virtual_account?.account_number;
+    const filename = `statement-${accountNumber ?? customer.id}.pdf`;
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
 
@@ -247,7 +248,11 @@ portalRouter.get("/statement.pdf", requirePortalAuth, async (req, res, next) => 
     doc.moveDown(0.5);
     doc.font("Helvetica").fontSize(11).fillColor("#555");
     doc.text(business?.name ?? "");
-    doc.text(`${customer.full_name} \u00B7 Account ${customer.virtual_account.account_number}`);
+    doc.text(
+      accountNumber
+        ? `${customer.full_name} \u00B7 Account ${accountNumber}`
+        : customer.full_name,
+    );
     doc.text(`Generated ${new Date().toISOString().slice(0, 10)}`);
     doc.moveDown();
 

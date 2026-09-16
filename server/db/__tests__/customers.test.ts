@@ -51,9 +51,9 @@ describe("findCustomerByAccountNumber", () => {
           updated_at: new Date("2026-06-01T00:00:00Z"),
           va_id: "11111111-1111-1111-1111-111111111301",
           va_customer_id: "11111111-1111-1111-1111-111111111201",
-          va_nomba_account_ref: "seed_john_doe",
+          va_account_ref: "seed_john_doe",
           va_account_number: "8112340001",
-          va_bank_name: "Nomba MFB",
+          va_bank_name: "Test Bank",
           va_bank_code: "090645",
           va_is_active: true,
           va_created_at: new Date("2026-06-01T00:00:00Z"),
@@ -67,7 +67,7 @@ describe("findCustomerByAccountNumber", () => {
       full_name: "John Doe",
       virtual_account: {
         account_number: "8112340001",
-        nomba_account_ref: "seed_john_doe",
+        account_ref: "seed_john_doe",
         is_active: true,
       },
     });

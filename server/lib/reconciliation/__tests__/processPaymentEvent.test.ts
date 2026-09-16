@@ -3,6 +3,10 @@ import type { QueryResult, QueryResultRow } from "pg";
 import { makeObligation } from "../../__tests__/factories";
 import { matchPayment } from "../matchPayment";
 
+vi.mock("../../../config/env", () => ({
+  env: { nodeEnv: "test" },
+}));
+
 vi.mock("../../../db/paymentEvents", () => ({
   getPaymentEventById: vi.fn(),
 }));

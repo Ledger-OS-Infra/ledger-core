@@ -22,7 +22,7 @@
     "lib/**/*.ts",
     "middleware/**/*.ts",
     "routes/**/*.ts",
-    "nomba/**/*.ts",
+    "services/**/*.ts",
     "idempotency/**/*.ts",
     "redis/**/*.ts",
     "queues/**/*.ts",
