@@ -45,6 +45,13 @@ env:
   NOMBA_CLIENT_SECRET: ${{ secrets.NOMBA_CLIENT_SECRET }}
   NOMBA_WEBHOOK_SECRET: ${{ secrets.NOMBA_WEBHOOK_SECRET }}
   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+  FLW_ENV: sandbox
+  FLW_API_BASE_URL: ${{ secrets.FLW_API_BASE_URL }}
+  FLW_PUBLIC_KEY: ${{ secrets.FLW_PUBLIC_KEY }}
+  FLW_SECRET_KEY: ${{ secrets.FLW_SECRET_KEY }}
+  FLW_ENCRYPTION_KEY: ${{ secrets.FLW_ENCRYPTION_KEY }}
+  FLW_SECRET_HASH: ${{ secrets.FLW_SECRET_HASH }}
+  FLW_WEBHOOK_PATH: /webhooks/flutterwave
 
 jobs:
   server:
