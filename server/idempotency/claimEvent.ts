@@ -2,7 +2,7 @@ import { pool } from "../db/pool";
 import { logger } from "../lib/logger";
 import { readyRedis } from "../redis/client";
 
-const KEY_PREFIX = "idempotency:nomba-event:";
+const KEY_PREFIX = "idempotency:payment-event:";
 const TTL_SECONDS = 60 * 60 * 24 * 3; // 3 days
 
 function usePostgresIdempotency(): boolean {
@@ -20,7 +20,7 @@ async function claimEventPostgres(eventId: string): Promise<boolean> {
   );
 
   if (rows.length > 0) {
-    logger.warn({ eventId }, "Duplicate Nomba event detected, skipping processing");
+    logger.warn({ eventId }, "Duplicate payment event detected, skipping processing");
     return false;
   }
 
@@ -39,7 +39,7 @@ export async function claimEvent(eventId: string): Promise<boolean> {
     const result = await redis.set(key, "1", "EX", TTL_SECONDS, "NX");
 
     if (result === null) {
-      logger.warn({ eventId }, "Duplicate Nomba event detected, skipping processing");
+      logger.warn({ eventId }, "Duplicate payment event detected, skipping processing");
       return false;
     }
 

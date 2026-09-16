@@ -28,7 +28,7 @@ describe("claimEvent", () => {
     (redis.set as any).mockResolvedValue("OK");
     await claimEvent("evt_123");
     expect(redis.set).toHaveBeenCalledWith(
-      "idempotency:nomba-event:evt_123",
+      "idempotency:payment-event:evt_123",
       "1",
       "EX",
       60 * 60 * 24 * 3,

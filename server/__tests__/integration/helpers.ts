@@ -1,8 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { NombaWebhookPayload } from "../../nomba/verifyWebhookSignature";
-import { signNombaWebhook } from "../../nomba/signWebhook";
 import { pool } from "../../db/pool";
-import { env } from "../../config/env";
 
 export async function waitFor(
   predicate: () => Promise<boolean>,
@@ -25,11 +22,11 @@ export async function seedCustomerWithVirtualAccount(input: {
   businessId: string;
   fullName: string;
   accountNumber: string;
-  nombaAccountRef?: string;
+  accountRef?: string;
 }): Promise<{ customerId: string; virtualAccountId: string }> {
   const customerId = randomUUID();
   const virtualAccountId = randomUUID();
-  const nombaAccountRef = input.nombaAccountRef ?? `ci_${customerId.replace(/-/g, "")}`;
+  const accountRef = input.accountRef ?? `ci_${customerId.replace(/-/g, "")}`;
 
   await pool.query(
     `INSERT INTO customers (id, business_id, full_name, email, status, metadata)
@@ -39,10 +36,10 @@ export async function seedCustomerWithVirtualAccount(input: {
 
   await pool.query(
     `INSERT INTO virtual_accounts (
-       id, customer_id, nomba_account_ref, account_number, bank_name, bank_code, is_active
+       id, customer_id, account_ref, account_number, bank_name, bank_code, is_active
      )
-     VALUES ($1, $2, $3, $4, 'Nomba MFB', '090645', TRUE)`,
-    [virtualAccountId, customerId, nombaAccountRef, input.accountNumber],
+     VALUES ($1, $2, $3, $4, 'Test Bank', '090645', TRUE)`,
+    [virtualAccountId, customerId, accountRef, input.accountNumber],
   );
 
   await pool.query(
@@ -51,11 +48,4 @@ export async function seedCustomerWithVirtualAccount(input: {
   );
 
   return { customerId, virtualAccountId };
-}
-
-export function buildSignedWebhookRequest(
-  payload: NombaWebhookPayload,
-  secret = env.nombaWebhookSecret,
-): { signature: string; timestamp: string } {
-  return signNombaWebhook(payload, secret);
 }

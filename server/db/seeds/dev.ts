@@ -30,7 +30,7 @@ const IDS = {
  * - John Doe: invoice partial then overpayment (₦20,000 wallet credit)
  * - Raphael: DSTV-style monthly MBU with partial June + FIFO clearance in July
  *
- * All monetary amounts are stored in kobo (1 NGN = 100 kobo), matching Nomba webhooks.
+ * All monetary amounts are stored in kobo (1 NGN = 100 kobo).
  * Use ngnToKobo() so TASK.md naira figures stay readable in seed code.
  */
 export async function seed(knex: Knex): Promise<void> {
@@ -78,18 +78,18 @@ export async function seed(knex: Knex): Promise<void> {
     {
       id: IDS.johnVa,
       customer_id: IDS.john,
-      nomba_account_ref: "seed_john_doe",
+      account_ref: "seed_john_doe",
       account_number: "8112340001",
-      bank_name: "Nomba MFB",
+      bank_name: "Test Bank",
       bank_code: "090645",
       is_active: true,
     },
     {
       id: IDS.raphaelVa,
       customer_id: IDS.raphael,
-      nomba_account_ref: "seed_raphael_okonkwo",
+      account_ref: "seed_raphael_okonkwo",
       account_number: "8112340002",
-      bank_name: "Nomba MFB",
+      bank_name: "Test Bank",
       bank_code: "090645",
       is_active: true,
     },

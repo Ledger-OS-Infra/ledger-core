@@ -4,19 +4,13 @@ import request from "supertest";
 import type { Express } from "express";
 import { createApp } from "../../expressApp";
 import { pool } from "../../db/pool";
-import { env } from "../../config/env";
 import { redis } from "../../redis/client";
 import { closeReconciliationQueue } from "../../queues/reconciliation";
 import {
   startReconciliationWorker,
   stopReconciliationWorker,
 } from "../../workers/reconciliationWorker";
-import type { NombaWebhookPayload } from "../../nomba/verifyWebhookSignature";
-import {
-  buildSignedWebhookRequest,
-  seedCustomerWithVirtualAccount,
-  waitFor,
-} from "./helpers";
+import { seedCustomerWithVirtualAccount } from "./helpers";
 import { integrationLive } from "./live";
 
 function buildDryRunPlan() {
@@ -27,42 +21,6 @@ function buildDryRunPlan() {
   const obligationDueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     .toISOString()
     .slice(0, 10);
-
-  const webhookPayload: NombaWebhookPayload = {
-    event_type: "payment_success",
-    requestId: `req_ci_${runId}`,
-    data: {
-      merchant: { userId: "ci_merchant", walletId: "ci_wallet" },
-      transaction: {
-        transactionId: `txn_ci_${runId}`,
-        type: "virtual_account_credit",
-        time: new Date().toISOString(),
-        responseCode: "00",
-        aliasAccountNumber: accountNumber,
-        aliasAccountReference: `INV-CI-${runId}`,
-        transactionAmount: 500_000,
-      },
-      customer: {
-        senderName: "CI Sender",
-        bankName: "Test Bank",
-        accountNumber: "0123456789",
-      },
-    },
-  };
-
-  const duplicatePayload: NombaWebhookPayload = {
-    ...webhookPayload,
-    requestId: `req_dup_${runId}`,
-    data: {
-      ...webhookPayload.data,
-      transaction: {
-        ...webhookPayload.data!.transaction!,
-        transactionId: `txn_dup_${runId}`,
-        aliasAccountReference: `INV-DUP-${runId}`,
-        transactionAmount: 100_000,
-      },
-    },
-  };
 
   return {
     runId,
@@ -111,24 +69,6 @@ function buildDryRunPlan() {
           reference_code: `INV-CI-${runId}`,
         },
         expect: "201 UNPAID",
-      },
-      {
-        method: "POST",
-        path: env.nombaWebhookPath,
-        body: webhookPayload,
-        expect: "200 { received: true } → obligation PAID",
-      },
-      {
-        method: "GET",
-        path: `/reporting/business/{businessId}/metrics`,
-        expect: "total_inflow > 0",
-      },
-      {
-        method: "POST",
-        path: env.nombaWebhookPath,
-        body: duplicatePayload,
-        note: "send twice with same transactionId",
-        expect: "second response { duplicate: true }, one payment_events row",
       },
     ],
   };
@@ -225,108 +165,6 @@ if (!integrationLive()) {
 
       expect(obligationRes.status).toBe(201);
       expect(obligationRes.body.data.status).toBe("UNPAID");
-    });
-
-    it("webhook → async reconciliation marks obligation PAID", async () => {
-      const transactionId = `txn_ci_${runId}`;
-      const payload: NombaWebhookPayload = {
-        event_type: "payment_success",
-        requestId: `req_ci_${runId}`,
-        data: {
-          merchant: { userId: "ci_merchant", walletId: "ci_wallet" },
-          transaction: {
-            transactionId,
-            type: "virtual_account_credit",
-            time: new Date().toISOString(),
-            responseCode: "00",
-            aliasAccountNumber: accountNumber,
-            aliasAccountReference: `INV-CI-${runId}`,
-            transactionAmount: 500_000,
-          },
-          customer: {
-            senderName: "CI Sender",
-            bankName: "Test Bank",
-            accountNumber: "0123456789",
-          },
-        },
-      };
-
-      const { signature, timestamp } = buildSignedWebhookRequest(payload);
-
-      const webhookRes = await request(app)
-        .post(env.nombaWebhookPath)
-        .set("nomba-signature", signature)
-        .set("nomba-timestamp", timestamp)
-        .send(payload);
-
-      expect(webhookRes.status).toBe(200);
-      expect(webhookRes.body).toEqual({ received: true });
-
-      await waitFor(async () => {
-        const { rows } = await pool.query<{ status: string }>(
-          `SELECT status FROM payment_obligations
-         WHERE customer_id = $1 AND reference_code = $2`,
-          [customerId, `INV-CI-${runId}`],
-        );
-        return rows[0]?.status === "PAID";
-      });
-
-      const metricsRes = await request(app)
-        .get(`/reporting/business/${businessId}/metrics`)
-        .set("Authorization", `Bearer ${accessToken}`);
-
-      expect(metricsRes.status).toBe(200);
-      expect(Number(metricsRes.body.data.total_inflow)).toBeGreaterThan(0);
-    });
-
-    it("deduplicates repeat webhook deliveries via Redis", async () => {
-      const transactionId = `txn_dup_${runId}`;
-      const payload: NombaWebhookPayload = {
-        event_type: "payment_success",
-        requestId: `req_dup_${runId}`,
-        data: {
-          merchant: { userId: "ci_merchant", walletId: "ci_wallet" },
-          transaction: {
-            transactionId,
-            type: "virtual_account_credit",
-            time: new Date().toISOString(),
-            responseCode: "00",
-            aliasAccountNumber: accountNumber,
-            aliasAccountReference: `INV-DUP-${runId}`,
-            transactionAmount: 100_000,
-          },
-          customer: {
-            senderName: "CI Sender",
-            bankName: "Test Bank",
-            accountNumber: "0123456789",
-          },
-        },
-      };
-
-      const { signature, timestamp } = buildSignedWebhookRequest(payload);
-
-      const first = await request(app)
-        .post(env.nombaWebhookPath)
-        .set("nomba-signature", signature)
-        .set("nomba-timestamp", timestamp)
-        .send(payload);
-
-      const second = await request(app)
-        .post(env.nombaWebhookPath)
-        .set("nomba-signature", signature)
-        .set("nomba-timestamp", timestamp)
-        .send(payload);
-
-      expect(first.status).toBe(200);
-      expect(first.body).toEqual({ received: true });
-      expect(second.status).toBe(200);
-      expect(second.body).toEqual({ received: true, duplicate: true });
-
-      const { rows } = await pool.query<{ count: string }>(
-        `SELECT COUNT(*)::TEXT AS count FROM payment_events WHERE idempotency_key = $1`,
-        [transactionId],
-      );
-      expect(Number(rows[0]?.count ?? 0)).toBe(1);
     });
   });
 }

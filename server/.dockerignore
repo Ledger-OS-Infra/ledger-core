@@ -4,6 +4,5 @@ dist
 .env.*
 *.log
 .git
-nomba/__tests__
 scripts
 vitest.config.ts

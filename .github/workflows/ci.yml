@@ -2,17 +2,10 @@ name: CI
 
 # Required repository secrets (Settings → Secrets and variables → Actions):
 #   JWT_SECRET, SMTP_HOST, SMTP_USER, SMTP_PASS
-#   NOMBA_WEBHOOK_SECRET, NOMBA_SUB_ACCOUNT_ID
-#   NOMBA_API_BASE_URL=https://api.nomba.com (live)
-#   NOMBA_PARENT_ACCOUNT_ID, NOMBA_CLIENT_ID, NOMBA_CLIENT_SECRET (live keys)
-#   NOMBA_SANDBOX_API_BASE_URL=https://sandbox.nomba.com
-#   NOMBA_SANDBOX_CLIENT_ID, NOMBA_SANDBOX_CLIENT_SECRET (test keys — CI sandbox job)
-#   Parent/sub-account IDs are shared across live and sandbox on Nomba.
+#   Flutterwave placeholders are set in workflow env
 #   SENTRY_DSN (optional)
 #   NEXT_PUBLIC_API_BASE_URL (optional — direct API URL for local/CI builds)
 #   API_PROXY_TARGET (optional — Vercel server-side proxy to the Express API)
-#
-# Optional (Nomba sandbox job on main): NOMBA_SANDBOX_VA_IDENTIFIERS
 #
 # NOT used in CI (on purpose):
 #   DATABASE_URL, REDIS_URL — integration uses ephemeral Postgres/Redis service
@@ -30,7 +23,13 @@ concurrency:
 
 env:
   AUTH_REQUIRE_EMAIL_VERIFICATION: "false"
-  NOMBA_ENV: production
+  FLW_ENV: sandbox
+  FLW_API_BASE_URL: https://developersandbox-api.flutterwave.com
+  FLW_PUBLIC_KEY: test_public_key
+  FLW_SECRET_KEY: test_secret_key
+  FLW_ENCRYPTION_KEY: test_encryption_key
+  FLW_SECRET_HASH: test_webhook_hash
+  FLW_WEBHOOK_PATH: /webhooks/flutterwave
   JWT_SECRET: ${{ secrets.JWT_SECRET }}
   SMTP_HOST: ${{ secrets.SMTP_HOST }}
   SMTP_PORT: ${{ secrets.SMTP_PORT }}
@@ -38,12 +37,6 @@ env:
   SMTP_USER: ${{ secrets.SMTP_USER }}
   SMTP_PASS: ${{ secrets.SMTP_PASS }}
   FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
-  NOMBA_API_BASE_URL: ${{ secrets.NOMBA_API_BASE_URL }}
-  NOMBA_PARENT_ACCOUNT_ID: ${{ secrets.NOMBA_PARENT_ACCOUNT_ID }}
-  NOMBA_SUB_ACCOUNT_ID: ${{ secrets.NOMBA_SUB_ACCOUNT_ID }}
-  NOMBA_CLIENT_ID: ${{ secrets.NOMBA_CLIENT_ID }}
-  NOMBA_CLIENT_SECRET: ${{ secrets.NOMBA_CLIENT_SECRET }}
-  NOMBA_WEBHOOK_SECRET: ${{ secrets.NOMBA_WEBHOOK_SECRET }}
   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
 jobs:
@@ -136,42 +129,6 @@ jobs:
 
       - name: Integration tests
         run: npm run test:integration
-
-  nomba-sandbox:
-    name: Nomba sandbox smoke (optional)
-    runs-on: ubuntu-latest
-    needs: server
-    continue-on-error: true
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    defaults:
-      run:
-        working-directory: server
-    env:
-      NOMBA_SANDBOX_VA_IDENTIFIERS: ${{ secrets.NOMBA_SANDBOX_VA_IDENTIFIERS }}
-      NOMBA_SANDBOX_API_BASE_URL: ${{ secrets.NOMBA_SANDBOX_API_BASE_URL }}
-      NOMBA_SANDBOX_CLIENT_ID: ${{ secrets.NOMBA_SANDBOX_CLIENT_ID }}
-      NOMBA_SANDBOX_CLIENT_SECRET: ${{ secrets.NOMBA_SANDBOX_CLIENT_SECRET }}
-      NOMBA_PARENT_ACCOUNT_ID: ${{ secrets.NOMBA_PARENT_ACCOUNT_ID }}
-      NOMBA_SUB_ACCOUNT_ID: ${{ secrets.NOMBA_SUB_ACCOUNT_ID }}
-      # Scripts import config/env only for Nomba — placeholders if that changes.
-      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
-      REDIS_URL: redis://localhost:6379
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: npm
-          cache-dependency-path: server/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Nomba sandbox smoke test
-        run: npm run test:nomba-sandbox
 
   frontend:
     name: Frontend — lint & build

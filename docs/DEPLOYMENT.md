@@ -47,14 +47,13 @@ cp server/.env.example server/.env
 | `JWT_SECRET` | api | Secret — do not commit |
 | `JWT_ACCESS_EXPIRES_IN` | api | e.g. `30m` |
 | `JWT_REFRESH_EXPIRES_IN` | api | e.g. `7d` |
-| `NOMBA_ENV` | api | `sandbox` for the hackathon |
-| `NOMBA_API_BASE_URL` | api | Nomba sandbox base URL |
-| `NOMBA_PARENT_ACCOUNT_ID` | api | From Nomba dashboard |
-| `NOMBA_SUB_ACCOUNT_ID` | api | From Nomba dashboard |
-| `NOMBA_CLIENT_ID` | api | Secret — do not commit |
-| `NOMBA_CLIENT_SECRET` | api | Secret — do not commit |
-| `NOMBA_WEBHOOK_SECRET` | api | Secret — used to verify inbound webhooks |
-| `NOMBA_WEBHOOK_PATH` | api | Defaults to `/webhooks/nomba` |
+| `FLW_ENV` | api | `sandbox` or `production` |
+| `FLW_API_BASE_URL` | api | Flutterwave API base URL (sandbox: `https://developersandbox-api.flutterwave.com`) |
+| `FLW_PUBLIC_KEY` | api | Flutterwave public key |
+| `FLW_SECRET_KEY` | api | Secret — do not commit |
+| `FLW_ENCRYPTION_KEY` | api | Secret — do not commit |
+| `FLW_SECRET_HASH` | api | Secret hash from the Flutterwave dashboard — HMAC-SHA256 of the raw webhook body, compared to `flutterwave-signature` |
+| `FLW_WEBHOOK_PATH` | api | e.g. `/webhooks/flutterwave` |
 | `SENTRY_DSN` | api | Optional — Sentry error tracking (Node.js project DSN) |
 
 `DATABASE_URL` and `REDIS_URL` in `server/.env` are used for **local (non-Docker) development only**. When running via `docker-compose.prod.yml`, the compose file overrides both to point at the `postgres` and `redis` containers — leave them as-is in `.env`.

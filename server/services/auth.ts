@@ -102,8 +102,7 @@ export async function signup(input: {
     );
 
     // A business/workspace is NOT created here — the user creates one
-    // explicitly after logging in (see POST /businesses). Each workspace is
-    // tied to the team's shared Nomba sub-account.
+    // explicitly after logging in (see POST /businesses).
 
     await invalidateTokensByUserAndType(userId, "email_verify", client);
     await insertAuthToken(
