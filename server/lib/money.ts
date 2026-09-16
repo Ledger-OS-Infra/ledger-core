@@ -24,6 +24,14 @@ export function ngnToKobo(ngn: number): number {
   return ngn * KOBO_PER_NGN;
 }
 
+/** Convert Flutterwave v3 major-unit amounts (NGN, possibly fractional) to kobo. */
+export function ngnMajorToKobo(ngn: number): number {
+  if (!Number.isFinite(ngn) || ngn <= 0) {
+    throw new Error(`Invalid NGN amount: ${ngn}`);
+  }
+  return Math.round(ngn * KOBO_PER_NGN);
+}
+
 /** Convert kobo to whole naira for display. E.g. 150_000 kobo → ₦1,500. */
 export function koboToNgn(kobo: number): number {
   assertWholeInteger(kobo, "Kobo amount",0);

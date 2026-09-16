@@ -8,11 +8,16 @@ import {
   getCustomerById,
   insertCustomer,
   insertCustomerWallet,
+  insertVirtualAccount,
   type CustomerWithVirtualAccount,
   type CreateCustomerInput,
 } from "../db/customers";
 import { getBusinessById } from "../db/businesses";
 import { sendCustomerWelcomeEmail } from "../lib/email";
+import {
+  getPaymentProvider,
+  type PaymentProvider,
+} from "../payments";
 
 const BCRYPT_ROUNDS = 12;
 
@@ -25,7 +30,13 @@ export interface CreateCustomerRequest {
   metadata?: Record<string, unknown>;
 }
 
+function accountRefForCustomer(customerId: string): string {
+  return `lc_${customerId.replace(/-/g, "")}`;
+}
+
 export class CustomerService {
+  constructor(private readonly payments: PaymentProvider) {}
+
   async createCustomer(
     input: CreateCustomerRequest,
   ): Promise<CustomerWithVirtualAccount> {
@@ -34,7 +45,31 @@ export class CustomerService {
     }
 
     const customerId = randomUUID();
+    const accountRef = accountRefForCustomer(customerId);
     const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
+
+    let virtualAccount;
+    try {
+      virtualAccount = await this.payments.createVirtualAccount({
+        customerId,
+        fullName: input.fullName,
+        accountRef,
+        email: input.email,
+        phone: input.phone,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      logger.error({ err: error, customerId }, "Payment provider failed to create virtual account");
+      throw new AppError(
+        error instanceof Error ? error.message : "Failed to create virtual account",
+        502,
+        "PAYMENT_PROVIDER_VA_FAILED",
+      );
+    }
+
     const client = await pool.connect();
 
     try {
@@ -51,6 +86,16 @@ export class CustomerService {
       };
 
       await insertCustomer(customerInput, client);
+      await insertVirtualAccount(
+        {
+          id: randomUUID(),
+          customerId,
+          accountRef: virtualAccount.accountRef,
+          accountNumber: virtualAccount.accountNumber,
+          bankName: virtualAccount.bankName,
+        },
+        client,
+      );
       await insertCustomerWallet(customerId, client);
 
       await client.query("COMMIT");
@@ -90,11 +135,13 @@ let defaultService: CustomerService | null = null;
 
 export function getCustomerService(): CustomerService {
   if (!defaultService) {
-    defaultService = new CustomerService();
+    defaultService = new CustomerService(getPaymentProvider());
   }
   return defaultService;
 }
 
-export function createCustomerService(): CustomerService {
-  return new CustomerService();
+export function createCustomerService(
+  payments: PaymentProvider = getPaymentProvider(),
+): CustomerService {
+  return new CustomerService(payments);
 }

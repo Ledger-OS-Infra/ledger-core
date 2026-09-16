@@ -1,4 +1,3 @@
-import { env } from "../config/env";
 import { FlutterwaveProvider } from "./flutterwave";
 import type { PaymentProvider } from "./provider";
 

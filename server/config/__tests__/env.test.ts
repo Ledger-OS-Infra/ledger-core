@@ -11,7 +11,7 @@ function stubAppEnv() {
 
 function stubFlutterwaveEnv() {
   vi.stubEnv("FLW_ENV", "sandbox");
-  vi.stubEnv("FLW_API_BASE_URL", "https://developersandbox-api.flutterwave.com");
+  vi.stubEnv("FLW_API_BASE_URL", "https://api.flutterwave.com");
   vi.stubEnv("FLW_PUBLIC_KEY", "FLWPUBK_TEST-public");
   vi.stubEnv("FLW_SECRET_KEY", "FLWSECK_TEST-secret");
   vi.stubEnv("FLW_ENCRYPTION_KEY", "enc-key");
@@ -33,7 +33,7 @@ describe("env", () => {
 
     expect(env.flutterwaveConfig).toEqual({
       environment: "sandbox",
-      baseUrl: "https://developersandbox-api.flutterwave.com",
+      baseUrl: "https://api.flutterwave.com",
       publicKey: "FLWPUBK_TEST-public",
       secretKey: "FLWSECK_TEST-secret",
       encryptionKey: "enc-key",

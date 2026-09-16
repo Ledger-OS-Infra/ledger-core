@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { koboToNgn, KOBO_PER_NGN, ngnToKobo, assertKoboAmount } from "../money";
+import {
+  koboToNgn,
+  KOBO_PER_NGN,
+  ngnToKobo,
+  ngnMajorToKobo,
+  assertKoboAmount,
+} from "../money";
 
 describe("money", () => {
   it("converts naira to kobo", () => {
@@ -21,5 +27,11 @@ describe("money", () => {
     expect(() => koboToNgn(-100)).toThrow("Kobo amount cannot be negative");
     expect(() => assertKoboAmount(-100)).toThrow("amount cannot be negative");
     expect(() => assertKoboAmount(0)).toThrow("amount must be at least 1");
+  });
+
+  it("converts Flutterwave major-unit amounts to kobo", () => {
+    expect(ngnMajorToKobo(50)).toBe(5000);
+    expect(ngnMajorToKobo(100.5)).toBe(10050);
+    expect(() => ngnMajorToKobo(0)).toThrow("Invalid NGN amount");
   });
 });

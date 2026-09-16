@@ -29,6 +29,10 @@ export interface CreateVirtualAccountInput {
   customerId: string;
   fullName: string;
   accountRef: string;
+  email: string;
+  phone?: string | null;
+  /** Optional NGN major-unit amount. Flutterwave dynamic VAs can pin a single payment. */
+  amount?: number;
 }
 
 /**
@@ -52,8 +56,14 @@ export interface PaymentProvider {
   verifyWebhookSignature(req: Request): boolean;
 
   /**
+   * Whether this webhook is a successful credit that should be persisted.
+   */
+  isCreditableWebhook(body: unknown): boolean;
+
+  /**
    * Parse the raw webhook body into the standard internal shape.
    * Called after signature verification passes.
+   * `amount` is in kobo.
    */
   parseWebhookPayload(body: unknown): ParsedWebhookPayload;
 

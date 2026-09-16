@@ -47,12 +47,12 @@ cp server/.env.example server/.env
 | `JWT_SECRET` | api | Secret — do not commit |
 | `JWT_ACCESS_EXPIRES_IN` | api | e.g. `30m` |
 | `JWT_REFRESH_EXPIRES_IN` | api | e.g. `7d` |
-| `FLW_ENV` | api | `sandbox` or `production` |
-| `FLW_API_BASE_URL` | api | Flutterwave API base URL (sandbox: `https://developersandbox-api.flutterwave.com`) |
+| `FLW_ENV` | api | `sandbox` or `production` (also accepts `test` / `live`) |
+| `FLW_API_BASE_URL` | api | Flutterwave v3 host. Defaults to `https://api.flutterwave.com` for both sandbox and live |
 | `FLW_PUBLIC_KEY` | api | Flutterwave public key |
 | `FLW_SECRET_KEY` | api | Secret — do not commit |
 | `FLW_ENCRYPTION_KEY` | api | Secret — do not commit |
-| `FLW_SECRET_HASH` | api | Secret hash from the Flutterwave dashboard — HMAC-SHA256 of the raw webhook body, compared to `flutterwave-signature` |
+| `FLW_SECRET_HASH` | api | Secret hash from the Flutterwave dashboard — compared to the `verif-hash` webhook header |
 | `FLW_WEBHOOK_PATH` | api | e.g. `/webhooks/flutterwave` |
 | `SENTRY_DSN` | api | Optional — Sentry error tracking (Node.js project DSN) |
 
