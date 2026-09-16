@@ -1,6 +1,9 @@
 import { describe, expect, it, vi, beforeEach, type Mock } from "vitest";
 import type { QueryResult, QueryResultRow } from "pg";
-import { findCustomerByAccountNumber } from "../customers";
+import {
+  findCustomerByAccountNumber,
+  findCustomerByAccountRef,
+} from "../customers";
 
 vi.mock("../pool", () => ({
   pool: {
@@ -87,5 +90,22 @@ describe("findCustomerByAccountNumber", () => {
 
     const customer = await findCustomerByAccountNumber("0000000000");
     expect(customer).toBeNull();
+  });
+});
+
+describe("findCustomerByAccountRef", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("looks up the active virtual account by Flutterwave tx_ref", async () => {
+    mockPoolQuery().mockResolvedValue(queryResult([]));
+
+    await findCustomerByAccountRef("seed_john_doe");
+
+    expect(mockPoolQuery()).toHaveBeenCalledWith(
+      expect.stringContaining("va.account_ref = $1"),
+      ["seed_john_doe"],
+    );
   });
 });

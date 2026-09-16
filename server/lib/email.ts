@@ -2,6 +2,7 @@ import { mailer } from "../config/mailer.config";
 import { env } from "../config/env";
 import { logger } from "./logger";
 
+
 interface SendEmailInput {
   to: string;
   subject: string;
@@ -108,6 +109,7 @@ export async function sendCustomerWelcomeEmail(
   businessName: string,
 ): Promise<void> {
   const link = `${env.customerPortalUrl}/`;
+
 
   await sendEmail({
     to: email,

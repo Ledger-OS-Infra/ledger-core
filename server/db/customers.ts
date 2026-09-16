@@ -235,6 +235,20 @@ export async function findCustomerByAccountNumber(
   return row ? mapCustomerWithVaRow(row) : null;
 }
 
+export async function findCustomerByAccountRef(
+  accountRef: string,
+): Promise<CustomerWithVirtualAccount | null> {
+  const { rows } = await pool.query<CustomerWithVaQueryRow>(
+    `${CUSTOMER_WITH_VA_SELECT}
+     WHERE va.account_ref = $1
+       AND va.is_active = TRUE`,
+    [accountRef],
+  );
+
+  const row = rows[0];
+  return row ? mapCustomerWithVaRow(row) : null;
+}
+
 type CustomerPatchField = {
   key: keyof UpdateCustomerInput;
   column: string;

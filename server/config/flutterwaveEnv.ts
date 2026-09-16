@@ -10,7 +10,7 @@ export interface FlutterwaveConfig {
   publicKey: string;
   secretKey: string;
   encryptionKey: string;
-  /** Dashboard secret hash — HMAC-SHA256 of the raw webhook body vs `flutterwave-signature`. */
+  /** Dashboard secret hash compared against Flutterwave v3's `verif-hash` header. */
   secretHash: string;
   webhookPath: string;
 }
@@ -39,15 +39,20 @@ export function getFlutterwaveEnvironment(
   );
 }
 
-/** Flutterwave credentials — required at application startup. */
+const DEFAULT_FLW_API_BASE_URL = "https://api.flutterwave.com";
+const DEFAULT_FLW_WEBHOOK_PATH = "/webhooks/flutterwave";
+
+/** Flutterwave v3 credentials — required at application startup. */
 export function loadFlutterwaveConfig(): FlutterwaveConfig {
   return {
     environment: getFlutterwaveEnvironment(),
-    baseUrl: required("FLW_API_BASE_URL"),
+    // v3 sandbox and live share this host; test vs live keys select the environment.
+    baseUrl: process.env.FLW_API_BASE_URL?.trim() || DEFAULT_FLW_API_BASE_URL,
     publicKey: required("FLW_PUBLIC_KEY"),
     secretKey: required("FLW_SECRET_KEY"),
     encryptionKey: required("FLW_ENCRYPTION_KEY"),
     secretHash: required("FLW_SECRET_HASH"),
-    webhookPath: required("FLW_WEBHOOK_PATH"),
+    webhookPath:
+      process.env.FLW_WEBHOOK_PATH?.trim() || DEFAULT_FLW_WEBHOOK_PATH,
   };
 }

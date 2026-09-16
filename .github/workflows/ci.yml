@@ -23,13 +23,6 @@ concurrency:
 
 env:
   AUTH_REQUIRE_EMAIL_VERIFICATION: "false"
-  FLW_ENV: sandbox
-  FLW_API_BASE_URL: https://developersandbox-api.flutterwave.com
-  FLW_PUBLIC_KEY: test_public_key
-  FLW_SECRET_KEY: test_secret_key
-  FLW_ENCRYPTION_KEY: test_encryption_key
-  FLW_SECRET_HASH: test_webhook_hash
-  FLW_WEBHOOK_PATH: /webhooks/flutterwave
   JWT_SECRET: ${{ secrets.JWT_SECRET }}
   SMTP_HOST: ${{ secrets.SMTP_HOST }}
   SMTP_PORT: ${{ secrets.SMTP_PORT }}
@@ -38,6 +31,13 @@ env:
   SMTP_PASS: ${{ secrets.SMTP_PASS }}
   FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+  FLW_ENV: sandbox
+  FLW_API_BASE_URL: https://api.flutterwave.com
+  FLW_PUBLIC_KEY: ${{ secrets.FLW_PUBLIC_KEY }}
+  FLW_SECRET_KEY: ${{ secrets.FLW_SECRET_KEY }}
+  FLW_ENCRYPTION_KEY: ${{ secrets.FLW_ENCRYPTION_KEY }}
+  FLW_SECRET_HASH: ${{ secrets.FLW_SECRET_HASH }}
+  FLW_WEBHOOK_PATH: /webhooks/flutterwave
 
 jobs:
   server:

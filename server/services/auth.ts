@@ -29,7 +29,7 @@ import {
 import { listBusinessMembershipsByUser } from "../db/businessMembers";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../lib/email";
 
-const BCRYPT_ROUNDS = 12;
+export const BCRYPT_ROUNDS = 12;
 const VERIFY_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 
