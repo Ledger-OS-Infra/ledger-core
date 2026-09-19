@@ -70,6 +70,19 @@ Optional, set in your shell or a root `.env` file before running compose:
 
 **Never commit `server/.env`.** It is already gitignored.
 
+### Payment provider
+
+Flutterwave is the only active payment provider — `server/payments/factory.ts` always
+returns `FlutterwaveProvider`, and `server/config/env.ts` has no Nomba variables left to
+load. There is no `PAYMENT_PROVIDER` env var and no runtime switch.
+
+Nomba was the original integration for the Nomba × DevCareer Hackathon, but the team
+migrated to Flutterwave afterward when no usable Nomba sandbox credentials remained for
+demos. Everything downstream of "a transfer arrived" (matching, allocation, the ledger,
+reporting) is provider-agnostic by design, so re-adding a Nomba (or any other) provider
+means implementing the `PaymentProvider` interface in `server/payments/provider.ts` and
+wiring it into the factory — not a second migration.
+
 ---
 
 ## Run the full stack
@@ -109,6 +122,36 @@ Expected: `{"status":"ok"}`
 Open `http://localhost:8080` in a browser for the dashboard.
 
 Migrations run automatically on `api` container start. Create test data via the Postman flows against the running API (see [`postman/README.md`](../postman/README.md)).
+
+---
+
+## Webhook setup (Flutterwave)
+
+Flutterwave needs a reachable URL to POST inbound transfer events to. In production
+this is your real domain plus `FLW_WEBHOOK_PATH` (default `/webhooks/flutterwave`), set
+on the [Flutterwave dashboard](https://dashboard.flutterwave.com) under **Settings →
+Webhooks**, along with the secret hash you put in `FLW_SECRET_HASH`.
+
+**Local / demo setup — expose the API with a tunnel:**
+
+```bash
+ngrok http 3050
+```
+
+Take the `https://<random>.ngrok-free.app` URL ngrok prints, append the webhook path
+(`/webhooks/flutterwave`), and paste it into the Flutterwave dashboard's webhook URL
+field. Flutterwave's sandbox can then simulate a bank transfer end-to-end without real
+money or a real bank.
+
+**Fallback if the sandbox simulator misbehaves on demo day:**
+
+```bash
+npm install -g flutterwave-cli
+flutterwave-cli webhook:ping --url http://localhost:3050/webhooks/flutterwave
+```
+
+This resends a sample Flutterwave webhook payload straight to the local API, bypassing
+the dashboard and the tunnel — useful as a belt-and-braces option during the live demo.
 
 ---
 
