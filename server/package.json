@@ -26,6 +26,9 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "pnpm": {
+    "onlyBuiltDependencies": ["bcrypt", "esbuild", "msgpackr-extract"]
+  },
   "dependencies": {
     "@sentry/node": "^10.63.0",
     "bcrypt": "^6.0.0",
