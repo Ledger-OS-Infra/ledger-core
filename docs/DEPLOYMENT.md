@@ -56,7 +56,9 @@ cp server/.env.example server/.env
 | `FLW_WEBHOOK_PATH` | api | e.g. `/webhooks/flutterwave` |
 | `SENTRY_DSN` | api | Optional — Sentry error tracking (Node.js project DSN) |
 
-`DATABASE_URL` and `REDIS_URL` in `server/.env` are used for **local (non-Docker) development only**. When running via `docker-compose.prod.yml`, the compose file overrides both to point at the `postgres` and `redis` containers — leave them as-is in `.env`.
+For a **Neon-hosted** API (no Docker Postgres), set `DATABASE_URL` (pooled) and `DATABASE_DIRECT_URL` (direct) in `server/.env`. See [docs/DATABASE_SETUP.md](./DATABASE_SETUP.md).
+
+`DATABASE_URL` and `REDIS_URL` in `server/.env` are used for **local (non-Docker) development**. When running via `docker-compose.prod.yml`, the compose file overrides both to point at the `postgres` and `redis` containers — leave them as-is in `.env` if you are using the compose Postgres.
 
 Optional, set in your shell or a root `.env` file before running compose:
 

@@ -9,7 +9,7 @@ name: CI
 #
 # NOT used in CI (on purpose):
 #   DATABASE_URL, REDIS_URL — integration uses ephemeral Postgres/Redis service
-#   containers on the runner (localhost). Do not point CI at Aiven/staging DBs.
+#   containers on the runner (localhost). Do not point CI at Neon/staging DBs.
 
 on:
   push:

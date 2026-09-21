@@ -1,6 +1,6 @@
 # Database setup guide
 
-Steps to run Ledger-Core Postgres locally (Docker) or on Aiven, apply migrations, bootstrap the tenant row, and create test data via Postman.
+Steps to run Ledger-Core Postgres locally (Docker) or on Neon, apply migrations, bootstrap the tenant row, and create test data via Postman.
 
 ---
 
@@ -180,29 +180,58 @@ You should see tables such as `businesses`, `customers`, `payment_obligations`, 
 
 ---
 
-## Hosted database (Aiven)
+## Hosted database (Neon)
 
-For a shared hosted Postgres (e.g. Aiven), use the **Service URI** from the Aiven console.
+Copy connection strings from the Neon console (**Dashboard → Connection details**). Neon always requires SSL. Certs are publicly trusted, so do **not** set `DATABASE_CA_CERT`.
+
+Use two URLs:
+
+| Env var | Neon toggle | Used by |
+|---------|-------------|---------|
+| `DATABASE_URL` | Pooled (`-pooler` host) | API `pg` pool |
+| `DATABASE_DIRECT_URL` | Direct (no `-pooler`) | Knex migrations and `db:setup` |
+
+PgBouncer (the pooler) does not support some migration DDL. If you only have one string, use the **direct** URL for both.
 
 In `server/.env`:
 
 ```env
-DATABASE_URL=postgresql://avnadmin:YOUR_PASSWORD@your-service.a.aivencloud.com:12345/defaultdb?sslmode=require
-DATABASE_SSL=true
+DATABASE_URL=postgresql://USER:PASSWORD@ep-xxx-pooler.region.aws.neon.tech/neondb?sslmode=require
+DATABASE_DIRECT_URL=postgresql://USER:PASSWORD@ep-xxx.region.aws.neon.tech/neondb?sslmode=require
 ```
 
-Then apply schema and bootstrap against Aiven (Docker not required for this step):
+Then apply schema and bootstrap against Neon (local Docker Postgres is not required):
 
 ```bash
 npm run db:setup --prefix server
 ```
 
-### TablePlus (Aiven)
+First query after the project has scaled to zero can take a few seconds while Neon wakes compute.
+
+### TablePlus (Neon)
 
 1. New connection → **PostgreSQL**
-2. Host, port, user, password, and database from the Aiven Service URI
-3. **SSL:** on (use Aiven CA certificate if prompted)
+2. Use the **direct** host (no `-pooler`), port `5432`, user, password, and database from the Neon URI
+3. **SSL:** Require
 4. Test connection → Save
+
+### Aiven
+
+Aiven still works: paste the Service URI with `?sslmode=require` (and optional `DATABASE_CA_CERT` for full verification). See `server/.env.example`.
+
+---
+
+## Hosted Redis (Aiven Valkey)
+
+Neon does not offer Redis. For BullMQ and webhook idempotency, use Aiven Valkey (or local Docker).
+
+Copy the **Service URI** from the Aiven console. It uses `rediss://` (TLS). Aiven Valkey presents a public Let's Encrypt cert — do **not** point `REDIS_CA_CERT` at the Aiven Postgres CA.
+
+```env
+REDIS_URL=rediss://default:PASSWORD@your-valkey.aivencloud.com:12345
+```
+
+Local Docker Redis (`redis://localhost:6379`) is still fine for development if you are not using Aiven.
 
 ---
 
@@ -224,7 +253,7 @@ The `server/db/seeds/dev.ts` script remains in the repo for optional local use (
 | `refresh_tokens` | JWT refresh token store |
 | `business_members` | User ↔ business role assignments |
 | `customers` | Customer profiles |
-| `virtual_accounts` | Nomba VA mapped to customer |
+| `virtual_accounts` | Flutterwave VA mapped to customer |
 | `billing_rules` | Recurring obligation config (e.g. monthly MBU) |
 | `payment_obligations` | Invoices, subscriptions, fees |
 | `payment_events` | Inbound transfers (webhook idempotency key) |
@@ -259,9 +288,12 @@ Reporting views and API examples: [`docs/REPORTING_VIEWS.md`](./REPORTING_VIEWS.
 
 - Ensure `server/.env` exists and contains `DATABASE_URL`.
 
-**Migrations fail on Aiven**
+**Migrations fail on Neon**
 
-- Confirm `?sslmode=require` is in the URL or `DATABASE_SSL=true` is set.
+- Confirm `?sslmode=require` is in the URL. Neon hosts enable SSL automatically.
+- Point `DATABASE_DIRECT_URL` at the **direct** (non-pooler) connection string.
+- URL-encode special characters in the password.
+- Comment out `DATABASE_CA_CERT_PATH` / `DATABASE_CA_CERT`. Those are Aiven-only; using the Aiven CA against Neon fails with `unable to get local issuer certificate`.
 
 **Fresh database**
 

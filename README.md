@@ -41,7 +41,7 @@ LedgerCore is a reconciliation infrastructure layer that:
 |---|---|
 | API | Node.js 20, TypeScript, Express 5 |
 | Queue | BullMQ + Redis 7 (Aiven Valkey in production) |
-| Database | PostgreSQL 16 (Aiven in production) |
+| Database | PostgreSQL 16 (Neon in production) |
 | Auth | JWT (access + refresh tokens), Bcrypt, Nodemailer |
 | Validation | Zod |
 | Frontend | Next.js 16, React Query, Tailwind CSS, shadcn/ui |
@@ -309,7 +309,7 @@ POST /webhooks/nomba
 
 **All monetary values are stored as integers in kobo** (1 NGN = 100 kobo) to eliminate floating-point rounding errors.
 
-For local Docker setup, Aiven connection, and TablePlus config see [docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md).
+For local Docker setup, Neon connection, and TablePlus config see [docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md).
 
 ---
 
@@ -353,7 +353,7 @@ See [CONTRIBUTION_GUIDE.md](CONTRIBUTION_GUIDE.md) for branch naming, commit con
 | [TASK.md](TASK.md) | Full product spec, reconciliation logic, and example flows |
 | [CONTRIBUTION_GUIDE.md](CONTRIBUTION_GUIDE.md) | Branch naming, commit conventions, PR process |
 | [docs/SCHEMA.md](docs/SCHEMA.md) | Database schema, ER diagram, indexes, append-only policy |
-| [docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md) | Local Docker and Aiven setup, TablePlus guide |
+| [docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md) | Local Docker and Neon setup, TablePlus guide |
 | [docs/REPORTING_VIEWS.md](docs/REPORTING_VIEWS.md) | Reporting views, example queries, API endpoints |
 | [docs/openapi.yaml](docs/openapi.yaml) | OpenAPI spec |
 | [postman/README.md](postman/README.md) | Postman flows for end-to-end manual testing |

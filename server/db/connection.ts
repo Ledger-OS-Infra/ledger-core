@@ -9,32 +9,46 @@ export interface DatabaseConnectionConfig {
  * Shared Postgres connection config for the API pool and Knex migrations.
  *
  * Local Docker: DATABASE_URL only (no SSL).
- * Hosted (Aiven / Neon / RDS): enable SSL via ?sslmode=require or DATABASE_SSL=true.
+ * Hosted (Neon / Aiven / RDS): enable SSL via ?sslmode=require, DATABASE_SSL=true,
+ * or a recognized host (*.neon.tech).
  *
- * Managed providers like Aiven present a certificate signed by their own
- * project CA, so full verification fails against the public CA bundle. Supply
- * the provider CA (DATABASE_CA_CERT or DATABASE_CA_CERT_PATH) to keep strict
- * verification; without it we fall back to an encrypted-but-unverified
- * connection so the DB works out of the box.
+ * Neon uses publicly trusted certs — TLS verification is on by default.
+ * Aiven Postgres signs with a project CA. Supply DATABASE_CA_CERT or
+ * DATABASE_CA_CERT_PATH for full verification; without it the connection is
+ * still encrypted but skips certificate checks so Aiven works out of the box.
  */
-export function databaseConnectionConfig(): DatabaseConnectionConfig {
-  const connectionString = process.env.DATABASE_URL;
+export function databaseConnectionConfig(
+  connectionString = process.env.DATABASE_URL,
+): DatabaseConnectionConfig {
   if (!connectionString) {
     throw new Error("DATABASE_URL is required");
   }
 
   const sslEnabled =
     process.env.DATABASE_SSL === "true" ||
-    /sslmode=/i.test(connectionString);
+    /sslmode=/i.test(connectionString) ||
+    isNeonHost(connectionString);
 
   if (!sslEnabled) {
     return { connectionString };
   }
 
+  // Neon uses publicly trusted certs. Ignore leftover Aiven CA files and
+  // libpq-only params (channel_binding) that node-postgres does not implement.
+  if (isNeonHost(connectionString)) {
+    return {
+      connectionString: stripQueryParams(connectionString, [
+        "sslmode",
+        "channel_binding",
+      ]),
+      ssl: { rejectUnauthorized: true },
+    };
+  }
+
   // Strip sslmode from the URL: recent pg/pg-connection-string treats
   // sslmode=require as verify-full and builds its own ssl config that ignores
   // the CA we attach below. Removing it lets our explicit ssl object win.
-  const cleanConnectionString = stripQueryParam(connectionString, "sslmode");
+  const cleanConnectionString = stripQueryParams(connectionString, ["sslmode"]);
 
   const ca = loadCaCert();
   if (ca) {
@@ -44,17 +58,36 @@ export function databaseConnectionConfig(): DatabaseConnectionConfig {
     };
   }
 
-  const strict = process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === "true";
+  const strict =
+    process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === "true" ||
+    isPublicCaHost(connectionString);
   return {
     connectionString: cleanConnectionString,
     ssl: { rejectUnauthorized: strict },
   };
 }
 
-function stripQueryParam(connectionString: string, param: string): string {
+export function isNeonHost(connectionString: string): boolean {
+  try {
+    const host = new URL(
+      connectionString.replace(/^postgres:/, "postgresql:"),
+    ).hostname;
+    return host.endsWith(".neon.tech") || host.endsWith(".neon.build");
+  } catch {
+    return /\.neon\.(tech|build)/i.test(connectionString);
+  }
+}
+
+function isPublicCaHost(connectionString: string): boolean {
+  return isNeonHost(connectionString);
+}
+
+function stripQueryParams(connectionString: string, params: string[]): string {
   try {
     const url = new URL(connectionString);
-    url.searchParams.delete(param);
+    for (const param of params) {
+      url.searchParams.delete(param);
+    }
     return url.toString();
   } catch {
     return connectionString;

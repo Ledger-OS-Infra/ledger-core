@@ -6,7 +6,11 @@ dotenv.config();
 
 const config: Knex.Config = {
   client: "pg",
-  connection: databaseConnectionConfig(),
+  // Neon pooler (PgBouncer) does not support some migration DDL. Prefer the
+  // direct host when both URLs are set.
+  connection: databaseConnectionConfig(
+    process.env.DATABASE_DIRECT_URL || process.env.DATABASE_URL,
+  ),
   migrations: {
     directory: "./db/migrations",
     extension: "ts",
