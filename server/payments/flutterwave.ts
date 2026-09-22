@@ -121,7 +121,7 @@ export class FlutterwaveProvider implements PaymentProvider {
       tx_ref: input.accountRef,
       is_permanent: false,
       narration: input.fullName,
-      amount: input.amount && input.amount > 0 ? input.amount : 100,
+      ...(input.amount && input.amount > 0 ? { amount: input.amount } : {}),
     });
 
     if (data.status !== "success" || !data.data?.account_number) {
