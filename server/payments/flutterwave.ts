@@ -86,7 +86,9 @@ function digitsOnly(value: string): string {
   return value.replace(/\D/g, "");
 }
 
-function headerValue(header: string | string[] | undefined): string | undefined {
+function headerValue(
+  header: string | string[] | undefined,
+): string | undefined {
   return Array.isArray(header) ? header[0] : header;
 }
 
@@ -118,12 +120,8 @@ export class FlutterwaveProvider implements PaymentProvider {
       email: input.email,
       tx_ref: input.accountRef,
       is_permanent: false,
-      firstname,
-      lastname,
       narration: input.fullName,
-      currency: "NGN",
-      ...(phonenumber ? { phonenumber } : {}),
-      ...(input.amount && input.amount > 0 ? { amount: input.amount } : {}),
+      amount: input.amount && input.amount > 0 ? input.amount : 100,
     });
 
     if (data.status !== "success" || !data.data?.account_number) {

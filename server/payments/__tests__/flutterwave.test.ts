@@ -80,11 +80,8 @@ describe("FlutterwaveProvider", () => {
       email: "jane@example.com",
       tx_ref: "va_jane",
       is_permanent: false,
-      firstname: "Jane",
-      lastname: "Doe",
       narration: "Jane Doe",
-      currency: "NGN",
-      phonenumber: "2348010000099",
+      amount: 100,
     });
     expect(result).toMatchObject({
       accountNumber: "9587478607",
