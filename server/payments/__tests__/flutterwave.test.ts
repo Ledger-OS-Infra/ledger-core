@@ -81,6 +81,7 @@ describe("FlutterwaveProvider", () => {
       tx_ref: "va_jane",
       is_permanent: false,
       narration: "Jane Doe",
+      amount: 1,
     });
     expect(result).toMatchObject({
       accountNumber: "9587478607",
