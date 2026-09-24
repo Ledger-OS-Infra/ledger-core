@@ -1,6 +1,6 @@
 # LedgerCore
 
-**Universal Reconciliation Engine** built on [Nomba Virtual Accounts](https://developer.nomba.com)
+**Universal Reconciliation Engine** built on [Flutterwave Virtual Accounts](https://developer.flutterwave.com/docs/virtual-account-numbers)
 
 > Every bank transfer becomes a structured financial event — not just a notification.
 
@@ -25,7 +25,7 @@ Even with virtual accounts, money arriving does not equal money understood.
 
 LedgerCore is a reconciliation infrastructure layer that:
 
-1. Assigns each customer a unique Nomba Virtual Account
+1. Assigns each customer a unique Flutterwave Virtual Account
 2. Captures inbound transfers automatically via signed webhooks
 3. Deduplicates with Redis idempotency — no double-processing on retries
 4. Matches every payment to the correct customer and obligation via a hybrid cascade
@@ -49,7 +49,7 @@ LedgerCore is a reconciliation infrastructure layer that:
 | Monitoring | Sentry (server + frontend) |
 | Testing | Vitest |
 | Infrastructure | Docker, docker-compose |
-| Payment integration | Nomba Virtual Accounts API + Webhooks |
+| Payment integration | Flutterwave Virtual Accounts API + Webhooks |
 
 ---
 
@@ -67,7 +67,7 @@ ledger-core/
 │   │   ├── schemas/               # Zod request schemas
 │   │   └── AppError, logger, ...  # Shared utilities
 │   ├── middleware/                 # Auth guard, rate limiting, error handler, request logger
-│   ├── nomba/                     # Nomba API client, auth, webhook signature verification
+│   ├── payments/                   # PaymentProvider interface + Flutterwave client, webhook verification
 │   ├── queues/                    # BullMQ queue definitions
 │   ├── redis/                     # Redis/Valkey client and BullMQ connection
 │   ├── routes/                    # auth, businesses, customers, obligations, billing, reporting, webhooks
@@ -109,8 +109,8 @@ ledger-core/
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/Ledger-OS-Infra/ledger-core.git
-cd ledger-core
+git clone https://github.com/Ledger-OS-Infra/ledger--raas.git
+cd ledger--raas
 
 # Server
 npm install --prefix server
@@ -220,7 +220,7 @@ curl http://localhost:3050/health
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/customers` | List customers (paginated) |
-| `POST` | `/customers` | Create customer + provision Nomba VA |
+| `POST` | `/customers` | Create customer + provision Flutterwave VA |
 | `GET` | `/customers/:id` | Customer profile and VA detail |
 | `PATCH` | `/customers/:id` | Update customer |
 
@@ -259,18 +259,18 @@ curl http://localhost:3050/health
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/webhooks/nomba` | Nomba inbound transfer event |
+| `POST` | `/webhooks/flutterwave` | Flutterwave inbound transfer event |
 
 ---
 
 ## Reconciliation Pipeline
 
 ```
-Nomba VA receives transfer
+Flutterwave VA receives transfer
         │
         ▼
-POST /webhooks/nomba
-  ├── HMAC-SHA512 signature verified
+POST /webhooks/flutterwave
+  ├── verif-hash signature verified
   ├── Redis idempotency check (duplicate = no-op)
   ├── Customer resolved via virtual account number
   ├── Payment event persisted
@@ -300,7 +300,7 @@ POST /webhooks/nomba
 |---|---|
 | `businesses` | Tenant / business profile |
 | `customers` | Customer profiles linked to a business |
-| `virtual_accounts` | Nomba VA assigned per customer |
+| `virtual_accounts` | Flutterwave VA assigned per customer |
 | `billing_rules` | Recurring obligation generation config |
 | `payment_obligations` | Invoices, subscriptions, fees — with status lifecycle |
 | `payment_events` | Inbound transfers (append-only) |
