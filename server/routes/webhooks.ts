@@ -81,12 +81,12 @@ async function handleFlutterwaveWebhook(
     return;
   }
 
-  let customer = parsed.accountNumber
-    ? await findCustomerByAccountNumber(parsed.accountNumber)
+  let customer = parsed.reference
+    ? await findCustomerByAccountRef(parsed.reference)
     : null;
 
-  if (!customer && parsed.reference) {
-    customer = await findCustomerByAccountRef(parsed.reference);
+  if (!customer && parsed.accountNumber) {
+    customer = await findCustomerByAccountNumber(parsed.accountNumber);
   }
 
   const virtualAccount = customer?.virtual_account ?? null;
