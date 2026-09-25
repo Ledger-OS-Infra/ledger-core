@@ -90,6 +90,11 @@ ledger-core/
 │   ├── components/                # Shared UI components
 │   ├── hooks/                     # Auth hook and form validation
 │   └── lib/                       # API client, query hooks, formatters
+├── customer-portal/               # Customer self-service portal
+│   ├── app/                       # Public-facing customer pages and flows
+│   ├── components/                # Portal-specific UI components
+│   ├── lib/                       # Portal API client and app helpers
+│   └── README.md                  # Customer portal setup notes
 ├── postman/                       # Postman collection and environments
 ├── docs/                          # Schema, database setup, reporting views, OpenAPI
 ├── docker-compose.yml             # Postgres + Redis for local dev
