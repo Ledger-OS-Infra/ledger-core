@@ -10,7 +10,7 @@ export type CustomerStatus = 'ACTIVE' | 'INACTIVE'
 export interface VirtualAccount {
   id: string
   customer_id: string
-  nomba_account_ref: string
+  account_ref: string
   account_number: string
   bank_name: string
   bank_code: string | null
@@ -28,7 +28,7 @@ export interface CustomerWithVirtualAccount {
   metadata: Record<string, unknown>
   created_at: string
   updated_at: string
-  virtual_account: VirtualAccount
+  virtual_account: VirtualAccount | null
 }
 
 export interface CreateCustomerRequest {

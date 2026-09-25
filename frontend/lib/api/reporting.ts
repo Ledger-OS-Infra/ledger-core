@@ -150,11 +150,11 @@ export const reportingClient = {
     businessId: string,
     params: { page?: number; limit?: number } = {},
   ): Promise<CustomerBalance[]> {
-    const raw = await http.get<RawCustomerBalance[]>(
+    const result = await http.getPaginated<RawCustomerBalance>(
       `/reporting/business/${encodeURIComponent(businessId)}/customers`,
       { query: { page: params.page, limit: params.limit } },
     )
-    return raw.map(normalizeCustomerBalance)
+    return result.items.map(normalizeCustomerBalance)
   },
 
   async listBusinessObligations(
@@ -260,27 +260,33 @@ export const reportingClient = {
   async listCustomerObligations(
     customerId: string,
     params: { page?: number; limit?: number } = {},
-  ): Promise<ObligationAging[]> {
-    const raw = await http.get<RawObligationAging[]>(
+  ) {
+    const result = await http.getPaginated<RawObligationAging>(
       `/reporting/customers/${encodeURIComponent(customerId)}/obligations`,
       { query: { page: params.page, limit: params.limit } },
     )
-    return raw.map(normalizeObligationAging)
+    return {
+      items: result.items.map(normalizeObligationAging),
+      pagination: result.pagination,
+    }
   },
 
   async listCustomerLedger(
     customerId: string,
     params: { page?: number; limit?: number } = {},
-  ): Promise<CustomerLedgerEntry[]> {
-    const raw = await http.get<RawCustomerLedgerEntry[]>(
+  ) {
+    const result = await http.getPaginated<RawCustomerLedgerEntry>(
       `/reporting/customers/${encodeURIComponent(customerId)}/ledger`,
       { query: { page: params.page, limit: params.limit } },
     )
-    return raw.map(normalizeLedgerEntry)
+    return {
+      items: result.items.map(normalizeLedgerEntry),
+      pagination: result.pagination,
+    }
   },
 
   getObligationPayments(obligationId: string) {
-    return http.get<Array<{ id: string; amount: number; paid_at: string }>>(
+    return http.getPaginated<{ id: string; amount: number; paid_at: string }>(
       `/reporting/obligations/${encodeURIComponent(obligationId)}/payments`,
     )
   },

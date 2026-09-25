@@ -181,10 +181,16 @@ export default function CustomersPage() {
                           </Link>
                         </TableCell>
                         <TableCell className="px-6 py-4">
-                          <VirtualAccountCell
-                            accountNumber={customer.virtual_account.account_number}
-                            bankName={customer.virtual_account.bank_name}
-                          />
+                          {customer.virtual_account ? (
+                            <VirtualAccountCell
+                              accountNumber={customer.virtual_account.account_number}
+                              bankName={customer.virtual_account.bank_name}
+                            />
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              Unavailable
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell className="px-6 py-4 text-right font-mono text-sm font-medium text-foreground">
                           {formatCurrency(customer.outstanding)}

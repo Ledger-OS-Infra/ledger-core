@@ -152,7 +152,7 @@ export interface Obligation {
       virtual_account: {
         id: 'va1',
         customer_id: '1',
-        nomba_account_ref: 'NOMBA-ACME-1',
+        account_ref: 'FLW-ACME-1',
         account_number: '0123456789',
         bank_name: 'Access Bank',
         bank_code: '044',
@@ -176,7 +176,7 @@ export interface Obligation {
       virtual_account: {
         id: 'va2',
         customer_id: '2',
-        nomba_account_ref: 'NOMBA-TECH-2',
+        account_ref: 'FLW-TECH-2',
         account_number: '9876543210',
         bank_name: 'GTBank',
         bank_code: '058',
@@ -200,7 +200,7 @@ export interface Obligation {
       virtual_account: {
         id: 'va3',
         customer_id: '3',
-        nomba_account_ref: 'NOMBA-GLOB-3',
+        account_ref: 'FLW-GLOB-3',
         account_number: '5555555555',
         bank_name: 'Zenith Bank',
         bank_code: '057',
@@ -224,7 +224,7 @@ export interface Obligation {
       virtual_account: {
         id: 'va4',
         customer_id: '4',
-        nomba_account_ref: 'NOMBA-CREA-4',
+        account_ref: 'FLW-CREA-4',
         account_number: '1111111111',
         bank_name: 'First Bank',
         bank_code: '011',
@@ -248,7 +248,7 @@ export interface Obligation {
       virtual_account: {
         id: 'va5',
         customer_id: '5',
-        nomba_account_ref: 'NOMBA-SUPP-5',
+        account_ref: 'FLW-SUPP-5',
         account_number: '2222222222',
         bank_name: 'UBA',
         bank_code: '033',
