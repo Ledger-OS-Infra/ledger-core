@@ -149,10 +149,16 @@ export default function CustomerDetailPage() {
             <Badge variant={record.status === 'ACTIVE' ? 'success' : 'danger'}>
               {record.status === 'ACTIVE' ? 'Active' : 'Inactive'}
             </Badge>
-            <VirtualAccountCopy
-              accountNumber={record.virtual_account.account_number}
-              bankName={record.virtual_account.bank_name}
-            />
+            {record.virtual_account ? (
+              <VirtualAccountCopy
+                accountNumber={record.virtual_account.account_number}
+                bankName={record.virtual_account.bank_name}
+              />
+            ) : (
+              <span className="text-sm text-muted-foreground">
+                Virtual account unavailable
+              </span>
+            )}
           </div>
         </div>
       </div>

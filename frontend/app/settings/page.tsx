@@ -22,7 +22,7 @@ const RECONCILIATION_DEFAULTS = [
   {
     title: "Duplicate webhook protection",
     description:
-      "Repeat Nomba webhook deliveries are ignored using Redis idempotency keys.",
+      "Repeat payment webhook deliveries are ignored using Redis idempotency keys.",
     enabled: true,
   },
 ] as const;

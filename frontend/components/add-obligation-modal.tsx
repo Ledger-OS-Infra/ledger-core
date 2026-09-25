@@ -203,7 +203,7 @@ export function AddObligationModal({ businessId }: { businessId: string }) {
   }
 
   const handleCopyAccount = async () => {
-    if (!selectedCustomer) return
+    if (!selectedCustomer?.virtual_account) return
     try {
       await navigator.clipboard.writeText(
         selectedCustomer.virtual_account.account_number,
@@ -340,7 +340,7 @@ export function AddObligationModal({ businessId }: { businessId: string }) {
                   <p className="text-xs text-destructive">{errors.customerId}</p>
                 )}
 
-                {selectedCustomer && (
+                {selectedCustomer?.virtual_account && (
                   <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                       Virtual account

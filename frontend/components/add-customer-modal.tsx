@@ -97,7 +97,7 @@ export function AddCustomerModal({ businessId }: { businessId: string }) {
   }
 
   const handleCopyAccountNumber = async () => {
-    if (!created) return
+    if (!created?.virtual_account) return
     try {
       await navigator.clipboard.writeText(created.virtual_account.account_number)
       setCopied(true)
@@ -159,37 +159,43 @@ export function AddCustomerModal({ businessId }: { businessId: string }) {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="rounded-lg border border-border bg-muted/40 p-4 space-y-1">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {created.virtual_account.bank_name}
-              </p>
-              <div className="flex items-center justify-between gap-2">
-                <p className="font-mono text-lg font-medium">
-                  {created.virtual_account.account_number}
+            {created.virtual_account ? (
+              <div className="rounded-lg border border-border bg-muted/40 p-4 space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {created.virtual_account.bank_name}
                 </p>
-                <button
-                  type="button"
-                  onClick={handleCopyAccountNumber}
-                  className={`inline-flex items-center gap-1 text-xs transition-colors ${
-                    copied
-                      ? 'text-green-600 dark:text-green-400'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {copied ? (
-                    <>
-                      <MdCheckCircle className="h-3.5 w-3.5" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <MdContentCopy className="h-3.5 w-3.5" />
-                      Copy
-                    </>
-                  )}
-                </button>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-mono text-lg font-medium">
+                    {created.virtual_account.account_number}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleCopyAccountNumber}
+                    className={`inline-flex items-center gap-1 text-xs transition-colors ${
+                      copied
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {copied ? (
+                      <>
+                        <MdCheckCircle className="h-3.5 w-3.5" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <MdContentCopy className="h-3.5 w-3.5" />
+                        Copy
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <p className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+                Virtual account unavailable
+              </p>
+            )}
 
             <ButtonCustom
               variant="primary"

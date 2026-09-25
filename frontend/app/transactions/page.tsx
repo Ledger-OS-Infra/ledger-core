@@ -118,7 +118,7 @@ export default function TransactionsPage() {
         ) : transactions.length === 0 ? (
           <Card className="p-8 text-center text-sm text-muted-foreground">
             {statusFilter === 'all'
-              ? 'No payment events yet. Transactions appear here when Nomba webhooks are received.'
+              ? 'No payment events yet. Transactions appear here when payment notifications are received.'
               : 'No transactions match the selected filter.'}
           </Card>
         ) : (
