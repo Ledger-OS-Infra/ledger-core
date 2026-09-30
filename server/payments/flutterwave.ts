@@ -116,21 +116,27 @@ export class FlutterwaveProvider implements PaymentProvider {
     const { firstname, lastname } = splitName(input.fullName);
     const phonenumber = input.phone ? digitsOnly(input.phone) : undefined;
 
-    const isSandbox = env.flutterwaveConfig.environment === "sandbox";
-    const amount =
-      input.amount && input.amount > 0
-        ? input.amount
-        : isSandbox
-          ? 1
-          : undefined;
-
     const data = await this.getSdk().VirtualAcct.create({
       email: input.email,
       tx_ref: input.accountRef,
       is_permanent: false,
       narration: input.fullName,
-      ...(amount !== undefined ? { amount } : {}),
+      ...(input.amount && input.amount > 0 ? { amount: input.amount } : {}),
     });
+
+    if (data.status !== "success" || !data.data?.account_number) {
+      if (env.flutterwaveConfig.environment === "sandbox") {
+        return {
+          accountNumber: `MOCK-${input.accountRef.slice(-10)}`,
+          bankName: "Mock Bank",
+          accountRef: input.accountRef,
+          providerResponse: {},
+        };
+      }
+      throw new Error(
+        `Flutterwave VA creation failed: ${JSON.stringify(data)}`,
+      );
+    }
 
     if (data.status !== "success" || !data.data?.account_number) {
       throw new Error(
